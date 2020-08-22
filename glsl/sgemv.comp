@@ -1,0 +1,84 @@
+#version 450
+#extension GL_KHR_shader_subgroup_arithmetic : enable
+
+layout(local_size_x = 32, local_size_y = 32, local_size_z = 1) in;
+
+layout(binding = 0) buffer Buffer0 {
+    // uint m;
+    // uint n;
+    float A[];
+};
+layout(binding = 1) buffer Buffer1 {
+    float x[];
+};
+layout(binding = 2) buffer Buffer2 {
+    float y[];
+};
+layout(binding = 3) buffer Output
+{
+   float outputs[];
+};
+layout(push_constant) uniform PushConsts {
+    float alpha;
+    float beta;
+};
+
+const int sumSubGroupSize = 64;
+
+shared float sdata[sumSubGroupSize][sumSubGroupSize];
+
+shared float new_y[1024];
+
+void main() {
+    uint indx_x = gl_GlobalInvocationID.x;
+    uint indx_y = gl_GlobalInvocationID.y;
+    if (gl_GlobalInvocationID.x == 0)
+    {
+        outputs[gl_GlobalInvocationID.y] = alpha + beta;
+    }
+
+    if (indx_x < n && indx_y < m) {
+
+        float new_A = alpha * A[indx_x + (n * indx_y)];
+        new_A *= x[gl_GlobalInvocationID.y];
+
+        if (gl_GlobalInvocationID.x == 0) {
+            new_y[gl_GlobalInvocationID.y] = beta * y[gl_GlobalInvocationID.y];
+        }
+        
+        barrier();
+
+        float sum = new_A;
+
+        sum = subgroupAdd(sum);
+
+        if (gl_GlobalInvocationID.x == 0)
+        {
+            outputs[gl_GlobalInvocationID.y] = sum;
+        }
+
+        uint subgroupsInRow = 1024 / gl_SubgroupSize;
+        uint subgroupIDInRow = gl_SubgroupID % subgroupsInRow;
+
+        if (gl_SubgroupInvocationID == 0)
+        {
+            sdata[gl_GlobalInvocationID.y][subgroupIDInRow] = sum;
+        }
+
+        barrier();
+
+        if (subgroupIDInRow == 0)
+        {
+            sum = gl_SubgroupInvocationID < subgroupsInRow ? sdata[gl_GlobalInvocationID.y][gl_SubgroupInvocationID] : 0;
+            sum = subgroupAdd(sum);
+
+            sum += new_y[gl_GlobalInvocationID.y];
+        }
+
+        // Could this not be embedded in above if statement?
+        if (gl_GlobalInvocationID.x == 0)
+        {
+            outputs[gl_GlobalInvocationID.y] = sum;
+        }
+    }
+}

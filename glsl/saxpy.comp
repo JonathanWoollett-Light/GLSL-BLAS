@@ -1,0 +1,18 @@
+#version 450
+
+layout(local_size_x = 1024, local_size_y = 1, local_size_z = 1) in;
+
+layout(binding = 0) buffer Buffer0 {
+    float x[];
+};
+layout(binding = 1) buffer Buffer1 {
+    float y[];
+};
+layout(push_constant) uniform PushConsts {
+    float a;
+};
+
+void main() {
+    uint indx = gl_GlobalInvocationID.x;
+    y[indx] += x[indx] * a;
+}

@@ -1,0 +1,14 @@
+[package]
+name = "gpu_blas"
+version = "0.1.0"
+authors = ["Jonathan Woollett-Light <jonathanwoollettlight@gmai.com>"]
+edition = "2018"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+wgpu = "0.6.0"
+bytemuck = "1.3.1"
+futures = "0.3.5"
+actix-rt = "1.1.1"  # For async tests
+itertools = "0.9.0" # Nice zipping of iterators

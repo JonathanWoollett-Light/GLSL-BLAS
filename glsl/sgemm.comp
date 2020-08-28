@@ -1,16 +1,12 @@
+// WIP: THIS IS NOT DONE AND WILL NOT WORK
 #version 450
 #extension GL_KHR_shader_subgroup_arithmetic : enable
 
-layout(local_size_x = 32, local_size_y = 32, local_size_z = 1) in; // 32^2 = 1024
+layout(local_size_x = 20, local_size_y = 20, local_size_z = 1) in;
 
-layout(binding = 0) buffer Buffer1 {
-    float x[];
-};
-layout(binding = 1) buffer Buffer2 {
-    float y[];
-};
-
-layout(r32f,binding = 2) uniform image2D A;
+layout(r32f,binding = 0) uniform image2D A; // m by k
+layout(r32f,binding = 1) uniform image2D B; // k by n
+layout(r32f,binding = 2) uniform image2D C; // m by n
 // layout(r32f,binding = 3) uniform image2D outputs;
 
 layout(binding = 3) buffer BufferOutputs {

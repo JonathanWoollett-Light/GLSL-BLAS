@@ -14,7 +14,7 @@ layout(binding = 2) buffer Output
    float outputs[];
 };
 
-const int sumSubGroupSize = 64;
+const int sumSubGroupSize = 64; // = local_size_x / subgroupSize
 
 shared float sdata[sumSubGroupSize];
 

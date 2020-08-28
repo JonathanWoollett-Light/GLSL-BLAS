@@ -6,6 +6,9 @@ mod tests {
     use itertools::izip;
     use std::time::Instant;
 
+    const MATRIX_SIZE:usize = 1024;
+    const VECTOR_SIZE:usize = MATRIX_SIZE * MATRIX_SIZE; 
+
     #[test]
     fn basic() {
         assert_eq!(4,2+2);
@@ -15,25 +18,16 @@ mod tests {
     async fn sscal() {
         let (device,queue):(wgpu::Device,wgpu::Queue) = get_compute_device_queue().await;
 
-        let m = 100000;
-        let x:Vec<f32> = (0..m).map(|v| v as f32).collect();
+        let x:Vec<f32> = (0..VECTOR_SIZE).map(|v| v as f32).collect();
+
+        println!("{}",x.len());
 
         let a:f32 = 2.;
-
-        let slice_size = x.len() * std::mem::size_of::<f32>();
-        let size = slice_size as wgpu::BufferAddress;
-
-        let staging_buffer = device.create_buffer(&wgpu::BufferDescriptor {
-            label: None,
-            size,
-            usage: wgpu::BufferUsage::MAP_READ | wgpu::BufferUsage::COPY_DST,
-            mapped_at_creation: false,
-        });
     
         let storage_buffer_x = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
             label: Some("Storage Buffer X"),
             contents: bytemuck::cast_slice(&x),
-            usage: wgpu::BufferUsage::STORAGE | wgpu::BufferUsage::COPY_SRC
+            usage: wgpu::BufferUsage::STORAGE | wgpu::BufferUsage::MAP_READ | wgpu::BufferUsage::MAP_WRITE
         });
 
         let (bind_group,bind_group_layout) = get_compute_bind_group(&device,&[&storage_buffer_x]);
@@ -48,17 +42,16 @@ mod tests {
             cpass.set_pipeline(&compute_pipeline);
             cpass.set_bind_group(0, &bind_group, &[]);
             cpass.set_push_constants(0,std::mem::transmute(&[a][..]));
-            cpass.dispatch(x.len() as u32, 1, 1); // Number of cells to run, the (x,y,z) size of item being processed
+            cpass.dispatch(x.len() as u32  / 1024, 1, 1); // Number of cells to run, the (x,y,z) size of item being processed
         }
-        // Sets adds copy operation to command encoder.
-        // Will copy data from storage buffer on GPU to staging buffer on CPU.
-        encoder.copy_buffer_to_buffer(&storage_buffer_x, 0, &staging_buffer, 0, size);
+
+        let command_buffer = encoder.finish();
 
         let start = Instant::now();
 
-        queue.submit(Some(encoder.finish()));
+        queue.submit(Some(command_buffer));
 
-        let buffer_slice = staging_buffer.slice(..);
+        let buffer_slice = storage_buffer_x.slice(..);
         let buffer_future = buffer_slice.map_async(wgpu::MapMode::Read);
 
         //let start = Instant::now();
@@ -68,59 +61,43 @@ mod tests {
         //block_on(); // Blocks thread until buffer_future can be read
         if let Ok(()) = buffer_future.await {
             let data = buffer_slice.get_mapped_range();
-            let result:Vec<f32> = data.chunks_exact(4).map(|b| f32::from_ne_bytes(b.try_into().unwrap())).collect();
-
             println!("GPU: {} micros",start.elapsed().as_micros());
 
-            drop(data);
-            staging_buffer.unmap();
+            let result:Vec<f32> = data.chunks_exact(4).map(|b| f32::from_ne_bytes(b.try_into().unwrap())).collect();
 
-            //println!("{:.?}",result);
+            drop(data);
+            storage_buffer_x.unmap();
 
             let start = Instant::now();
 
             let cpu_vec:Vec<f32> = x.iter().map(|v| v*a).collect();
-
             println!("CPU: {} micros",start.elapsed().as_micros());
 
-            assert_eq!(result,cpu_vec);
-
-            // // Check
-            // for (x,result) in izip!(x.into_iter(),result.into_iter()) {
-            //     assert_eq!(result,x*a);
-            // }
+            println!("{} | {}",cpu_vec.len(),result.len()); // TODO Why is `result.len() == cpu_vec.len() + 1`, is it including the push constant?
+            for (result,expected) in result.iter().zip(cpu_vec.iter()) {
+                assert_eq!(result,expected);
+            }
+            //assert_eq!(result,cpu_vec);
         }
-        assert!(false);
-        //let cs_module = device.create_shader_module(wgpu::include_spirv!("../spir-v/sum.spv"));
     }
     #[actix_rt::test]
     async fn saxpy() {
         let (device,queue):(wgpu::Device,wgpu::Queue) = get_compute_device_queue().await;
 
-        let x:Vec<f32> = (1..10).map(|v| v as f32).collect();
-        let y:Vec<f32> = (10..19).map(|v| v as f32).collect();
+        let x:Vec<f32> = (0..VECTOR_SIZE).map(|v| v as f32).collect();
+        let y:Vec<f32> = (0..VECTOR_SIZE).map(|v| v as f32).collect();
 
         let a:f32 = 2.;
 
-        let slice_size = x.len() * std::mem::size_of::<f32>();
-        let size = slice_size as wgpu::BufferAddress;
-
-        let staging_buffer = device.create_buffer(&wgpu::BufferDescriptor {
-            label: None,
-            size,
-            usage: wgpu::BufferUsage::MAP_READ | wgpu::BufferUsage::COPY_DST,
-            mapped_at_creation: false,
-        });
-    
         let storage_buffer_x = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
             label: Some("Storage Buffer X"),
             contents: bytemuck::cast_slice(&x),
-            usage: wgpu::BufferUsage::STORAGE
+            usage: wgpu::BufferUsage::STORAGE | wgpu::BufferUsage::MAP_WRITE // I beleive map write prevents creation of temporary staging buffer during initialization
         });
         let storage_buffer_y = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
             label: Some("Storage Buffer Y"),
             contents: bytemuck::cast_slice(&y),
-            usage: wgpu::BufferUsage::STORAGE | wgpu::BufferUsage::COPY_SRC
+            usage: wgpu::BufferUsage::STORAGE | wgpu::BufferUsage::MAP_READ | wgpu::BufferUsage::MAP_WRITE
         });
 
         let (bind_group,bind_group_layout) = get_compute_bind_group(&device,&[&storage_buffer_x,&storage_buffer_y]);
@@ -135,68 +112,65 @@ mod tests {
             cpass.set_pipeline(&compute_pipeline);
             cpass.set_bind_group(0, &bind_group, &[]);
             cpass.set_push_constants(0,std::mem::transmute(&[a][..]));
-            cpass.dispatch(x.len() as u32, 1, 1); // Number of cells to run, the (x,y,z) size of item being processed
+            cpass.dispatch(x.len() as u32 / 1024, 1, 1); // Number of cells to run, the (x,y,z) size of item being processed
         }
-        // Sets adds copy operation to command encoder.
-        // Will copy data from storage buffer on GPU to staging buffer on CPU.
-        encoder.copy_buffer_to_buffer(&storage_buffer_y, 0, &staging_buffer, 0, size);
 
-        queue.submit(Some(encoder.finish()));
+        let command_buffer = encoder.finish();
 
-        let buffer_slice = staging_buffer.slice(..);
+        let start =  Instant::now();
+
+        queue.submit(Some(command_buffer));
+
+        let buffer_slice = storage_buffer_y.slice(..);
         let buffer_future = buffer_slice.map_async(wgpu::MapMode::Read);
         device.poll(wgpu::Maintain::Wait);
 
         //block_on(); // Blocks thread until buffer_future can be read
         if let Ok(()) = buffer_future.await {
             let data = buffer_slice.get_mapped_range();
+            println!("GPU: {} micros",start.elapsed().as_micros());
+
             let result:Vec<f32> = data.chunks_exact(4).map(|b| f32::from_ne_bytes(b.try_into().unwrap())).collect();
 
             drop(data);
-            staging_buffer.unmap();
+            storage_buffer_y.unmap();
 
-            println!("{:.?}",result);
+            let start = Instant::now();
 
-            for (x,y,result) in izip!(x.into_iter(),y.into_iter(),result.into_iter()) {
-                assert_eq!(result,y+x*a);
+            let cpu_vec:Vec<f32> = x.iter().zip(y.iter()).map(|(x,y)| y+x*a).collect();
+            println!("CPU: {} micros",start.elapsed().as_micros());
+
+            println!("{} | {}",cpu_vec.len(),result.len()); // TODO Why is `result.len() == cpu_vec.len() + 1`, is it including the push constant?
+            for (result,expected) in result.iter().zip(cpu_vec.iter()) {
+                assert_eq!(result,expected);
             }
+            //assert_eq!(result,cpu_vec);
         }
-        //assert!(false);
     }
     #[actix_rt::test]
     async fn sdot() {
         let (device,queue):(wgpu::Device,wgpu::Queue) = get_compute_device_queue().await;
 
-        let x:Vec<f32> = (1..10).map(|v| v as f32).collect();
-        let y:Vec<f32> = (10..19).map(|v| v as f32).collect();
-
-        let a:f32 = 2.;
+        let x:Vec<f32> = (0..372).map(|v| v as f32).collect();
+        let y:Vec<f32> = (0..372).map(|v| v as f32).collect();
 
         let slice_size = x.len() * std::mem::size_of::<f32>();
         let size = slice_size as wgpu::BufferAddress;
-
-        let staging_buffer = device.create_buffer(&wgpu::BufferDescriptor {
-            label: None,
-            size,
-            usage: wgpu::BufferUsage::MAP_READ | wgpu::BufferUsage::COPY_DST,
-            mapped_at_creation: false,
-        });
     
         let storage_buffer_x = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
             label: Some("Storage Buffer X"),
             contents: bytemuck::cast_slice(&x), // Casts [u32] to [u8]
-            usage: wgpu::BufferUsage::STORAGE
+            usage: wgpu::BufferUsage::STORAGE | wgpu::BufferUsage::MAP_WRITE
         });
         let storage_buffer_y = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
             label: Some("Storage Buffer Y"),
-            contents: bytemuck::cast_slice(&y),
-            usage: wgpu::BufferUsage::STORAGE
+            contents: bytemuck::cast_slice(&y), // Casts [u32] to [u8]
+            usage: wgpu::BufferUsage::STORAGE | wgpu::BufferUsage::MAP_WRITE
         });
         let storage_buffer_outputs = device.create_buffer(&wgpu::BufferDescriptor {
             label: Some("Storage Buffer Outputs"),
-            size, // Casts [u32] to [u8]
-            usage: wgpu::BufferUsage::STORAGE
-                | wgpu::BufferUsage::COPY_SRC,
+            size,
+            usage: wgpu::BufferUsage::STORAGE | wgpu::BufferUsage::MAP_READ,
             mapped_at_creation: false,
         });
 
@@ -211,68 +185,73 @@ mod tests {
             let mut cpass = encoder.begin_compute_pass();
             cpass.set_pipeline(&compute_pipeline);
             cpass.set_bind_group(0, &bind_group, &[]);
-            cpass.dispatch(x.len() as u32, 1, 1); // Number of cells to run, the (x,y,z) size of item being processed
+            cpass.dispatch((x.len() as f32 / 1024f32).ceil() as u32, 1, 1); // Number of cells to run, the (x,y,z) size of item being processed
         }
-        // Sets adds copy operation to command encoder.
-        // Will copy data from storage buffer on GPU to staging buffer on CPU.
-        encoder.copy_buffer_to_buffer(&storage_buffer_outputs, 0, &staging_buffer, 0, size);
 
-        queue.submit(Some(encoder.finish()));
+        let command_buffer = encoder.finish();
 
-        let buffer_slice = staging_buffer.slice(..);
+        let start = Instant::now();
+
+        queue.submit(Some(command_buffer));
+
+        let buffer_slice = storage_buffer_outputs.slice(..);
         let buffer_future = buffer_slice.map_async(wgpu::MapMode::Read);
         device.poll(wgpu::Maintain::Wait);
 
         //block_on(); // Blocks thread until buffer_future can be read
         if let Ok(()) = buffer_future.await {
             let data = buffer_slice.get_mapped_range();
+            println!("GPU: {} micros",start.elapsed().as_micros());
             
-            let number_of_vals = data.len()/1024+4;
-            println!("{}->{} ({})",data.len(),number_of_vals,number_of_vals/4);
+            let values = data.len() / 4;
+            let number_of_partial_sums = (values as f32 / 1024f32).ceil() as usize; // Each workgroup produces 1 partial sum, each workgroup has up to 1024 values
+            println!("{}->{} ({})",data.len(),values, number_of_partial_sums);
 
-            let result:Vec<f32> = data[0..number_of_vals].chunks_exact(4).map(|b| f32::from_ne_bytes(b.try_into().unwrap())).collect();
+            let result:Vec<f32> = data[0..4*number_of_partial_sums].chunks_exact(4).map(|b| f32::from_ne_bytes(b.try_into().unwrap())).collect();
+            println!("number of partial sums: {}",result.len());
+            println!("1st partial sum: {}",result[0]);
             let final_sum:f32 = result.iter().sum();
 
             drop(data);
-            staging_buffer.unmap();
+            storage_buffer_outputs.unmap();
 
-            println!("{:.?}",result);
-            println!("{:.?}",final_sum);
+            // println!("{:.?}",result);
+            // println!("{:.?}",final_sum);
 
-            assert_eq!(final_sum,izip!(x.into_iter(),y.into_iter()).map(|(x,y)| x*y).sum());
+            let start = Instant::now();
 
-            // for (x,y,result) in izip!(x.into_iter(),y.into_iter(),result.into_iter()) {
-            //     assert_eq!(result,y+x*a);
-            // }
+            let cpu_vec:Vec<f32> = x.iter().zip(y.iter()).map(|(x,y)| y*x).collect();
+            println!("number of vals: {}",cpu_vec.len());
+            let cpu_vec:Vec<f32> = cpu_vec.chunks(1024).map(|chunk| chunk.iter().sum()).collect();
+            println!("number of partial sums: {}",cpu_vec.len());
+            println!("1st partial sum: {}",cpu_vec[0]);
+
+
+            let cpu_vec:f32 = x.iter().zip(y.iter()).map(|(x,y)| x*y).sum();
+            println!("CPU: {} micros",start.elapsed().as_micros());
+
+            println!("{},{}",final_sum,cpu_vec);
+            assert_eq!(final_sum,cpu_vec);
         }
-        //assert!(false);
     }
     #[actix_rt::test]
     async fn snrm2() {
         let (device,queue):(wgpu::Device,wgpu::Queue) = get_compute_device_queue().await;
 
-        let x:Vec<f32> = (1..10).map(|v| v as f32).collect();
+        let x:Vec<f32> = (0..VECTOR_SIZE).map(|v| v as f32).collect();
 
         let slice_size = x.len() * std::mem::size_of::<f32>();
         let size = slice_size as wgpu::BufferAddress;
-
-        let staging_buffer = device.create_buffer(&wgpu::BufferDescriptor {
-            label: None,
-            size,
-            usage: wgpu::BufferUsage::MAP_READ | wgpu::BufferUsage::COPY_DST,
-            mapped_at_creation: false,
-        });
     
         let storage_buffer_x = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
             label: Some("Storage Buffer X"),
             contents: bytemuck::cast_slice(&x),
-            usage: wgpu::BufferUsage::STORAGE
+            usage: wgpu::BufferUsage::STORAGE | wgpu::BufferUsage::MAP_WRITE
         });
         let storage_buffer_outputs = device.create_buffer(&wgpu::BufferDescriptor {
             label: Some("Storage Buffer Outputs"),
             size,
-            usage: wgpu::BufferUsage::STORAGE
-                | wgpu::BufferUsage::COPY_SRC,
+            usage: wgpu::BufferUsage::STORAGE | wgpu::BufferUsage::MAP_READ,
             mapped_at_creation: false,
         });
 
@@ -287,68 +266,62 @@ mod tests {
             let mut cpass = encoder.begin_compute_pass();
             cpass.set_pipeline(&compute_pipeline);
             cpass.set_bind_group(0, &bind_group, &[]);
-            cpass.dispatch(x.len() as u32, 1, 1); // Number of cells to run, the (x,y,z) size of item being processed
+            cpass.dispatch(x.len() as u32 / 1024, 1, 1); // Number of cells to run, the (x,y,z) size of item being processed
         }
-        // Sets adds copy operation to command encoder.
-        // Will copy data from storage buffer on GPU to staging buffer on CPU.
-        encoder.copy_buffer_to_buffer(&storage_buffer_outputs, 0, &staging_buffer, 0, size);
 
-        queue.submit(Some(encoder.finish()));
+        let command_buffer = encoder.finish();
 
-        let buffer_slice = staging_buffer.slice(..);
+        let start = Instant::now();
+
+        queue.submit(Some(command_buffer));
+
+        let buffer_slice = storage_buffer_outputs.slice(..);
         let buffer_future = buffer_slice.map_async(wgpu::MapMode::Read);
         device.poll(wgpu::Maintain::Wait);
 
         //block_on(); // Blocks thread until buffer_future can be read
         if let Ok(()) = buffer_future.await {
             let data = buffer_slice.get_mapped_range();
+            println!("GPU: {} micros",start.elapsed().as_micros());
             
             let number_of_vals = data.len()/1024+4;
-            println!("{}->{} ({})",data.len(),number_of_vals,number_of_vals/4);
+            //println!("{}->{} ({})",data.len(),number_of_vals,number_of_vals/4);
 
             let result:Vec<f32> = data[0..number_of_vals].chunks_exact(4).map(|b| f32::from_ne_bytes(b.try_into().unwrap())).collect();
             let final_sum:f32 = result.iter().sum::<f32>().sqrt();
 
             drop(data);
-            staging_buffer.unmap();
+            storage_buffer_outputs.unmap();
 
-            println!("{:.?}",result);
-            println!("{:.?}",final_sum);
+            // println!("{:.?}",result);
+            // println!("{:.?}",final_sum);
 
-            let expected = x.iter().map(|x| x*x).sum::<f32>().sqrt();
-            assert_eq!(final_sum,expected);
+            let start = Instant::now();
 
-            // for (x,y,result) in izip!(x.into_iter(),y.into_iter(),result.into_iter()) {
-            //     assert_eq!(result,y+x*a);
-            // }
+            let cpu_vec:f32 = x.iter().map(|x| x*x).sum::<f32>().sqrt();
+            println!("CPU: {} micros",start.elapsed().as_micros());
+
+            assert_eq!(final_sum,cpu_vec);
         }
     }
     #[actix_rt::test]
     async fn sasum() {
         let (device,queue):(wgpu::Device,wgpu::Queue) = get_compute_device_queue().await;
 
-        let x:Vec<f32> = (-5..5).map(|v| v as f32).collect();
+        let x:Vec<f32> = (0-(VECTOR_SIZE/2)..VECTOR_SIZE-(VECTOR_SIZE/2)).map(|v| v as f32).collect();
 
         let slice_size = x.len() * std::mem::size_of::<f32>();
         let size = slice_size as wgpu::BufferAddress;
-
-        let staging_buffer = device.create_buffer(&wgpu::BufferDescriptor {
-            label: None,
-            size,
-            usage: wgpu::BufferUsage::MAP_READ | wgpu::BufferUsage::COPY_DST,
-            mapped_at_creation: false,
-        });
     
         let storage_buffer_x = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
             label: Some("Storage Buffer X"),
             contents: bytemuck::cast_slice(&x),
-            usage: wgpu::BufferUsage::STORAGE
+            usage: wgpu::BufferUsage::STORAGE | wgpu::BufferUsage::MAP_WRITE
         });
         let storage_buffer_outputs = device.create_buffer(&wgpu::BufferDescriptor {
             label: Some("Storage Buffer Outputs"),
             size,
-            usage: wgpu::BufferUsage::STORAGE
-                | wgpu::BufferUsage::COPY_SRC,
+            usage: wgpu::BufferUsage::STORAGE | wgpu::BufferUsage::MAP_READ,
             mapped_at_creation: false,
         });
 
@@ -363,86 +336,78 @@ mod tests {
             let mut cpass = encoder.begin_compute_pass();
             cpass.set_pipeline(&compute_pipeline);
             cpass.set_bind_group(0, &bind_group, &[]);
-            cpass.dispatch(x.len() as u32, 1, 1); // Number of cells to run, the (x,y,z) size of item being processed
+            cpass.dispatch(x.len() as u32 / 1024, 1, 1);
         }
-        // Sets adds copy operation to command encoder.
-        // Will copy data from storage buffer on GPU to staging buffer on CPU.
-        encoder.copy_buffer_to_buffer(&storage_buffer_outputs, 0, &staging_buffer, 0, size);
 
-        queue.submit(Some(encoder.finish()));
+        let command_buffer = encoder.finish();
 
-        let buffer_slice = staging_buffer.slice(..);
+        let start = Instant::now();
+
+        queue.submit(Some(command_buffer));
+
+        let buffer_slice = storage_buffer_outputs.slice(..);
         let buffer_future = buffer_slice.map_async(wgpu::MapMode::Read);
         device.poll(wgpu::Maintain::Wait);
 
         //block_on(); // Blocks thread until buffer_future can be read
         if let Ok(()) = buffer_future.await {
             let data = buffer_slice.get_mapped_range();
+            println!("GPU: {} micros",start.elapsed().as_micros());
             
             let number_of_vals = data.len()/1024+4;
-            println!("{}->{} ({})",data.len(),number_of_vals,number_of_vals/4);
+            //println!("{}->{} ({})",data.len(),number_of_vals,number_of_vals/4);
 
             let result:Vec<f32> = data[0..number_of_vals].chunks_exact(4).map(|b| f32::from_ne_bytes(b.try_into().unwrap())).collect();
             let final_sum:f32 = result.iter().sum();
 
             drop(data);
-            staging_buffer.unmap();
+            storage_buffer_outputs.unmap();
 
-            println!("{:.?}",result);
-            println!("{:.?}",final_sum);
+            // println!("{:.?}",result);
+            // println!("{:.?}",final_sum);
 
-            let expected:f32 = x.iter().map(|x| x.abs()).sum();
-            assert_eq!(final_sum,expected);
+            let start = Instant::now();
 
-            // for (x,y,result) in izip!(x.into_iter(),y.into_iter(),result.into_iter()) {
-            //     assert_eq!(result,y+x*a);
-            // }
+            let cpu_vec:f32 = x.iter().map(|x| x.abs()).sum::<f32>();
+            println!("CPU: {} micros",start.elapsed().as_micros());
+
+            assert_eq!(final_sum,cpu_vec);
         }
-        //assert!(false);
     }
 
     #[actix_rt::test]
     async fn sgemv() {
         let (device,queue):(wgpu::Device,wgpu::Queue) = get_compute_device_queue().await;
 
-        let (m,n) = (10000,10000); // m == n
-
-        let x:Vec<f32> = (0..m).map(|v| v as f32).collect();
-        let y:Vec<f32> = (m..m+m).map(|v| v as f32).collect();
-        let A:Vec<f32> = (0..m*n).map(|v| v as f32).collect();
+        let x:Vec<f32> = (0..MATRIX_SIZE).map(|v| v as f32).collect();
+        let y:Vec<f32> = (0..MATRIX_SIZE).map(|v| v as f32).collect();
+        let A:Vec<f32> = (0..VECTOR_SIZE).map(|v| v as f32).collect();
 
         let alpha:f32 = 0.5;
         let beta:f32 = 0.1;
 
-        let value_staging_buffer_size = (m * n * std::mem::size_of::<f32>());
+        let value_staging_buffer_size = A.len() * std::mem::size_of::<f32>();
 
-        let value_staging_buffer_row_size:usize = n * std::mem::size_of::<f32>();
+        let value_staging_buffer_row_size:usize = MATRIX_SIZE * std::mem::size_of::<f32>();
         let used_buffer_row_size:usize = ((value_staging_buffer_row_size as f32 / 256.).ceil() * 256.) as usize;
-        let used_buffer_size:usize = m * used_buffer_row_size;
+        let used_buffer_size:usize = MATRIX_SIZE * used_buffer_row_size;
         let buffer_address_size = used_buffer_size as wgpu::BufferAddress;
 
         //println!("{} -> {}",value_staging_buffer_size,used_buffer_size);
-
-        let staging_buffer = device.create_buffer(&wgpu::BufferDescriptor {
-            label: None,
-            size: (m * std::mem::size_of::<f32>()) as wgpu::BufferAddress,// `buffer_address_size` this size is used when we have a texture output, right now I am using a buffer output,
-            usage: wgpu::BufferUsage::MAP_READ | wgpu::BufferUsage::COPY_DST,
-            mapped_at_creation: false,
-        });
     
         let storage_buffer_x = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
             label: Some("Storage Buffer X"),
             contents: bytemuck::cast_slice(&x),
-            usage: wgpu::BufferUsage::STORAGE
+            usage: wgpu::BufferUsage::STORAGE | wgpu::BufferUsage::MAP_WRITE
         });
         let storage_buffer_y = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
             label: Some("Storage Buffer Y"),
             contents: bytemuck::cast_slice(&y),
-            usage: wgpu::BufferUsage::STORAGE
+            usage: wgpu::BufferUsage::STORAGE | wgpu::BufferUsage::MAP_WRITE
         });
         let texture_internal = device.create_texture(&wgpu::TextureDescriptor {
             label: Some("Texture Internal Holder"),
-            size: wgpu::Extent3d { width: n as u32, height: m as u32, depth:1 },
+            size: wgpu::Extent3d { width: MATRIX_SIZE as u32, height: MATRIX_SIZE as u32, depth:1 },
             mip_level_count: 1,
             sample_count: 1,
             dimension: wgpu::TextureDimension::D2,
@@ -452,12 +417,12 @@ mod tests {
 
         let texture_A = device.create_texture(&wgpu::TextureDescriptor {
             label: Some("Texture A"),
-            size: wgpu::Extent3d { width: n as u32, height: m as u32, depth:1 },
+            size: wgpu::Extent3d { width: MATRIX_SIZE as u32, height: MATRIX_SIZE as u32, depth:1 },
             mip_level_count: 1,
             sample_count: 1,
             dimension: wgpu::TextureDimension::D2,
             format: wgpu::TextureFormat::R32Float,
-            usage: wgpu::TextureUsage::STORAGE | wgpu::TextureUsage::COPY_SRC,
+            usage: wgpu::TextureUsage::STORAGE | wgpu::TextureUsage::COPY_SRC, // TODO Is `COPY_SRC` neccessary here?
         });
 
         queue.write_texture(
@@ -472,19 +437,18 @@ mod tests {
                 bytes_per_row: value_staging_buffer_row_size as u32,
                 rows_per_image: 0
             },
-            wgpu::Extent3d { width: n as u32, height: m as u32, depth:1 }
+            wgpu::Extent3d { width: MATRIX_SIZE as u32, height: MATRIX_SIZE as u32, depth:1 }
         );
 
         let buffer_outputs = device.create_buffer(&wgpu::BufferDescriptor {
             label: Some("Storage Buffer Outputs"),
-            size: (m * std::mem::size_of::<f32>()) as wgpu::BufferAddress,
-            usage: wgpu::BufferUsage::STORAGE | wgpu::BufferUsage::COPY_SRC,
+            size: (MATRIX_SIZE * std::mem::size_of::<f32>()) as wgpu::BufferAddress,
+            usage: wgpu::BufferUsage::STORAGE | wgpu::BufferUsage::MAP_READ,
             mapped_at_creation: false,
         });
 
         let views:Vec<wgpu::TextureView> = vec![
             texture_A.create_view(&wgpu::TextureViewDescriptor::default()),
-            //texture_outputs.create_view(&wgpu::TextureViewDescriptor::default())
             texture_internal.create_view(&wgpu::TextureViewDescriptor::default())
         ];
 
@@ -519,16 +483,6 @@ mod tests {
                 },
                 count: None,
             },
-            // wgpu::BindGroupLayoutEntry {
-            //     binding: 3,
-            //     visibility: wgpu::ShaderStage::COMPUTE,
-            //     ty: wgpu::BindingType::StorageTexture {
-            //         dimension: wgpu::TextureViewDimension::D2,
-            //         format: wgpu::TextureFormat::R32Float,
-            //         readonly: false,
-            //     },
-            //     count: None,
-            // },
             wgpu::BindGroupLayoutEntry {
                 binding: 3,
                 visibility: wgpu::ShaderStage::COMPUTE,
@@ -548,17 +502,7 @@ mod tests {
                     readonly: false,
                 },
                 count: None,
-            },
-            // wgpu::BindGroupLayoutEntry {
-            //     binding: 4,
-            //     visibility: wgpu::ShaderStage::COMPUTE,
-            //     ty: wgpu::BindingType::StorageBuffer {
-            //         dynamic: false,
-            //         readonly: false,
-            //         min_binding_size: None,
-            //     },
-            //     count: None,
-            // },
+            }
         ];
         let bindgroup_entries = vec![
             wgpu::BindGroupEntry {
@@ -573,18 +517,10 @@ mod tests {
                 binding: 2,
                 resource: wgpu::BindingResource::TextureView(&views[0])
             },
-            // wgpu::BindGroupEntry {
-            //     binding: 3,
-            //     resource: wgpu::BindingResource::TextureView(&views[1])
-            // },
             wgpu::BindGroupEntry {
                 binding: 3,
                 resource: wgpu::BindingResource::Buffer(buffer_outputs.slice(..)),
             },
-            // wgpu::BindGroupEntry {
-            //     binding: 4,
-            //     resource: wgpu::BindingResource::Buffer(storage_buffer_internal.slice(..)),
-            // },
             wgpu::BindGroupEntry {
                 binding: 4,
                 resource: wgpu::BindingResource::TextureView(&views[1])
@@ -612,22 +548,21 @@ mod tests {
             cpass.set_pipeline(&compute_pipeline);
             cpass.set_bind_group(0, &bind_group, &[]);
             cpass.set_push_constants(0,std::mem::transmute(&[alpha,beta][..]));
-            cpass.dispatch(n as u32, m as u32, 1); // Number of cells to run, the (x,y,z) size of item being processed
+            cpass.dispatch(MATRIX_SIZE as u32 / 32, MATRIX_SIZE as u32 / 32, 1); // Number of cells to run, the (x,y,z) size of item being processed
         }
-        encoder.copy_buffer_to_buffer(&buffer_outputs, 0, &staging_buffer, 0, (m * std::mem::size_of::<f32>()) as u64);
 
         let start = Instant::now();
 
         queue.submit(Some(encoder.finish()));
 
-        let buffer_slice = staging_buffer.slice(..);
+        let buffer_slice = buffer_outputs.slice(..);
         let buffer_future = buffer_slice.map_async(wgpu::MapMode::Read);
         device.poll(wgpu::Maintain::Wait);
 
         //block_on(); // Blocks thread until buffer_future can be read
         if let Ok(()) = buffer_future.await {
-            
             let data = buffer_slice.get_mapped_range();
+            println!("GPU: {} ms",start.elapsed().as_millis());
 
             // let rows_bytes:Vec<Vec<u8>> = data.chunks_exact(used_buffer_row_size as usize).map(|r| r[0..40].to_vec()).collect();
             // println!("[{},{}]",rows_bytes.len(),rows_bytes[0].len());
@@ -636,10 +571,8 @@ mod tests {
 
             let full_result:Vec<f32> = data.chunks_exact(4).map(|b| f32::from_ne_bytes(b.try_into().unwrap())).collect();
 
-            println!("GPU: {} ms",start.elapsed().as_millis());
-
             drop(data);
-            staging_buffer.unmap();
+            buffer_outputs.unmap();
 
             //println!("full_result: {:.?}",full_result);
             //println!("length: {}",full_result.len());
@@ -648,68 +581,55 @@ mod tests {
 
             let start = Instant::now();
 
-            for y_indx in 0..m {
-                let mut sum = 0.;
-                for x_indx in 0..n {
-                    sum += alpha * (n*y_indx + x_indx) as f32 * x[x_indx];
-                }
-                sum += beta * y[y_indx];
-                assert_eq!(full_result[y_indx],sum);
+            let mut cpu_vec:Vec<f32> = vec!(0.;MATRIX_SIZE);
+            for y_indx in 0..MATRIX_SIZE {
+                cpu_vec[y_indx] = x.iter().enumerate().map(|(indx,x)| x * (MATRIX_SIZE*y_indx + indx) as f32 * alpha).sum();
+                cpu_vec[y_indx] += beta * y[y_indx];
             }
-
             println!("CPU: {} ms",start.elapsed().as_millis());
-            
+
+            assert_eq!(full_result,cpu_vec);
         }
-        assert!(false);
     }
     #[actix_rt::test]
     async fn sgemv_short() {
         let (device,queue):(wgpu::Device,wgpu::Queue) = get_compute_device_queue().await;
 
-        let (m,n) = (10000,10000); // m == n
-
-        let x:Vec<f32> = (0..m).map(|v| v as f32).collect();
-        let y:Vec<f32> = (m..m+m).map(|v| v as f32).collect();
-        let A:Vec<f32> = (0..m*n).map(|v| v as f32).collect();
+        let x:Vec<f32> = (0..MATRIX_SIZE).map(|v| v as f32).collect();
+        let y:Vec<f32> = (0..MATRIX_SIZE).map(|v| v as f32).collect();
+        let A:Vec<f32> = (0..VECTOR_SIZE).map(|v| v as f32).collect();
 
         let alpha:f32 = 0.5;
         let beta:f32 = 0.1;
 
-        let value_staging_buffer_size = (m * n * std::mem::size_of::<f32>());
+        let value_staging_buffer_size = A.len() * std::mem::size_of::<f32>();
 
-        let value_staging_buffer_row_size:usize = n * std::mem::size_of::<f32>();
+        let value_staging_buffer_row_size:usize = MATRIX_SIZE * std::mem::size_of::<f32>();
         let used_buffer_row_size:usize = ((value_staging_buffer_row_size as f32 / 256.).ceil() * 256.) as usize;
-        let used_buffer_size:usize = m * used_buffer_row_size;
+        let used_buffer_size:usize = MATRIX_SIZE * used_buffer_row_size;
         let buffer_address_size = used_buffer_size as wgpu::BufferAddress;
 
         //println!("{} -> {}",value_staging_buffer_size,used_buffer_size);
-
-        let staging_buffer = device.create_buffer(&wgpu::BufferDescriptor {
-            label: Some("Staging Buffer"),
-            size: (m * std::mem::size_of::<f32>()) as wgpu::BufferAddress,// `buffer_address_size` this size is used when we have a texture output, right now I am using a buffer output,
-            usage: wgpu::BufferUsage::MAP_READ | wgpu::BufferUsage::COPY_DST,
-            mapped_at_creation: false,
-        });
     
         let storage_buffer_x = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
             label: Some("Storage Buffer X"),
             contents: bytemuck::cast_slice(&x),
-            usage: wgpu::BufferUsage::STORAGE
+            usage: wgpu::BufferUsage::STORAGE | wgpu::BufferUsage::MAP_WRITE
         });
         let storage_buffer_y = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
             label: Some("Storage Buffer Y"),
             contents: bytemuck::cast_slice(&y),
-            usage: wgpu::BufferUsage::STORAGE | wgpu::BufferUsage::COPY_SRC
+            usage: wgpu::BufferUsage::STORAGE | wgpu::BufferUsage::MAP_WRITE | wgpu::BufferUsage::MAP_READ
         });
 
         let texture_A = device.create_texture(&wgpu::TextureDescriptor {
             label: Some("Texture A"),
-            size: wgpu::Extent3d { width: n as u32, height: m as u32, depth:1 },
+            size: wgpu::Extent3d { width: MATRIX_SIZE as u32, height: MATRIX_SIZE as u32, depth:1 },
             mip_level_count: 1,
             sample_count: 1,
             dimension: wgpu::TextureDimension::D2,
             format: wgpu::TextureFormat::R32Float,
-            usage: wgpu::TextureUsage::STORAGE | wgpu::TextureUsage::COPY_SRC | wgpu::TextureUsage::COPY_DST,
+            usage: wgpu::TextureUsage::STORAGE | wgpu::TextureUsage::COPY_SRC | wgpu::TextureUsage::COPY_DST, // TODO Does `COPY_DST` ned to be here?
         });
         let staging_texture_buffer = device.create_buffer(&wgpu::BufferDescriptor {
             label: Some("Staging Texture Buffer"),
@@ -730,7 +650,7 @@ mod tests {
                 bytes_per_row: value_staging_buffer_row_size as u32,
                 rows_per_image: 0
             },
-            wgpu::Extent3d { width: n as u32, height: m as u32, depth:1 }
+            wgpu::Extent3d { width: MATRIX_SIZE as u32, height: MATRIX_SIZE as u32, depth:1 }
         );
 
         let views:Vec<wgpu::TextureView> = vec![
@@ -807,25 +727,26 @@ mod tests {
             cpass.set_pipeline(&compute_pipeline);
             cpass.set_bind_group(0, &bind_group, &[]);
             cpass.set_push_constants(0,std::mem::transmute(&[alpha,beta][..]));
-            cpass.dispatch(n as u32, m as u32, 1); // Number of cells to run, the (x,y,z) size of item being processed
+            cpass.dispatch(MATRIX_SIZE as u32 / 32, MATRIX_SIZE as u32 / 32, 1); // Number of cells to run, the (x,y,z) size of item being processed
         }
-        encoder.copy_buffer_to_buffer(&storage_buffer_y, 0, &staging_buffer, 0, (m * std::mem::size_of::<f32>()) as u64);
         encoder.copy_texture_to_buffer(
             wgpu::TextureCopyViewBase { texture: &texture_A, mip_level:0,origin: wgpu::Origin3d{x:0,y:0,z:0} },
             wgpu::BufferCopyViewBase { 
                 buffer: &staging_texture_buffer,
-                layout: wgpu::TextureDataLayout { offset:0, bytes_per_row: used_buffer_row_size as u32, rows_per_image: m as u32}
+                layout: wgpu::TextureDataLayout { offset:0, bytes_per_row: used_buffer_row_size as u32, rows_per_image: MATRIX_SIZE as u32}
             },
-            wgpu::Extent3d { width: n as u32, height: m as u32, depth: 1}
+            wgpu::Extent3d { width: MATRIX_SIZE as u32, height: MATRIX_SIZE as u32, depth: 1}
         );
+
+        let command_buffer = encoder.finish();
 
         let start = Instant::now();
 
         //panic!("here?");
 
-        queue.submit(Some(encoder.finish()));
+        queue.submit(Some(command_buffer));
 
-        let buffer_slice = staging_buffer.slice(..);
+        let buffer_slice = storage_buffer_y.slice(..);
         let buffer_future = buffer_slice.map_async(wgpu::MapMode::Read);
 
         let texture_slice = staging_texture_buffer.slice(..);
@@ -838,7 +759,7 @@ mod tests {
             if let Ok(()) = texture_future.await {
                 // Running GPU
                 let A = texture_slice.get_mapped_range();
-                let rows_bytes:Vec<Vec<u8>> = A.chunks_exact(used_buffer_row_size as usize).map(|r| r[0..(n * std::mem::size_of::<f32>())].to_vec()).collect();
+                let rows_bytes:Vec<Vec<u8>> = A.chunks_exact(used_buffer_row_size as usize).map(|r| r[0..(MATRIX_SIZE * std::mem::size_of::<f32>())].to_vec()).collect();
                 //println!("[{},{}]",rows_bytes.len(),rows_bytes[0].len());
                 let rows_vals:Vec<Vec<f32>> = rows_bytes.iter().map(|r| r.chunks_exact(4).map(|v| f32::from_ne_bytes(v.try_into().unwrap())).collect()).collect();
                 //println!("[{},{}]",rows_vals.len(),rows_vals[0].len());
@@ -853,50 +774,37 @@ mod tests {
 
                 //println!("y: {:.?}",new_y);
 
-                let mut new_A:Vec<f32> = vec!(0.;m);
-                for y_indx in 0..m {
+                let mut new_A:Vec<f32> = vec!(0f32;MATRIX_SIZE);
+                for y_indx in 0..MATRIX_SIZE {
                     new_A[y_indx] = rows_vals[y_indx].iter().sum::<f32>() + new_y[y_indx];
                 }
 
                 println!("GPU: {} ms",start.elapsed().as_millis());
 
                 drop(y_data);
-                staging_buffer.unmap();
+                storage_buffer_y.unmap();
                 drop(A);
                 staging_texture_buffer.unmap();
 
                 //println!("full_result: {:.?}",full_result);
                 //println!("length: {}",full_result.len());
 
-                //println!("GPU: {} micros",start.elapsed().as_micros());
-
                 let start = Instant::now();
 
                 // Running CPU
                 //println!("cpu matrix:");
-                let mut cpu_matrix:Vec<f32> = vec!(0.;m);
-                for y_indx in 0..m {
-                    let mut sum = 0.;
-                    for x_indx in 0..n {
-                        let holder = alpha * (n*y_indx + x_indx) as f32 * x[x_indx];
-                        //print!("{},",holder);
-                        sum += alpha * (n*y_indx + x_indx) as f32 * x[x_indx];
-                    }
-                    //println!();
-                    sum += beta * y[y_indx];
-                    cpu_matrix[y_indx] = sum;
-                }
+                let start = Instant::now();
 
+                let mut cpu_vec:Vec<f32> = vec!(0.;MATRIX_SIZE);
+                for y_indx in 0..MATRIX_SIZE {
+                    cpu_vec[y_indx] = x.iter().enumerate().map(|(indx,x)| x * (MATRIX_SIZE*y_indx + indx) as f32 * alpha).sum();
+                    cpu_vec[y_indx] += beta * y[y_indx];
+                }
                 println!("CPU: {} ms",start.elapsed().as_millis());
 
-
-                // Checking GPU
-                for y_indx in 0..m {
-                    assert_eq!(new_A[y_indx],cpu_matrix[y_indx]);
-                }
+                assert_eq!(new_A,cpu_vec);
             }
         }
-        assert!(false);
     }
    
     // Cannot be used with textures
@@ -963,7 +871,7 @@ mod tests {
         let instance = wgpu::Instance::new(wgpu::BackendBit::PRIMARY);
         let adapter = instance
             .request_adapter(&wgpu::RequestAdapterOptions {
-                power_preference: wgpu::PowerPreference::Default,
+                power_preference: wgpu::PowerPreference::HighPerformance,
                 compatible_surface: None,
             })
             .await
@@ -975,7 +883,7 @@ mod tests {
         let (device, queue) = adapter
         .request_device(
             &wgpu::DeviceDescriptor {
-                features: wgpu::Features::PUSH_CONSTANTS,
+                features: wgpu::Features::PUSH_CONSTANTS | wgpu::Features::MAPPABLE_PRIMARY_BUFFERS,
                 limits: limits,
                 shader_validation: true,
             },

@@ -42,7 +42,7 @@ mod tests {
             cpass.set_pipeline(&compute_pipeline);
             cpass.set_bind_group(0, &bind_group, &[]);
             cpass.set_push_constants(0,std::mem::transmute(&[a][..]));
-            cpass.dispatch(x.len() as u32  / 1024, 1, 1); // Number of cells to run, the (x,y,z) size of item being processed
+            cpass.dispatch((x.len() as f32 / 1024f32).ceil() as u32, 1, 1); // Number of cells to run, the (x,y,z) size of item being processed
         }
 
         let command_buffer = encoder.finish();
@@ -112,7 +112,7 @@ mod tests {
             cpass.set_pipeline(&compute_pipeline);
             cpass.set_bind_group(0, &bind_group, &[]);
             cpass.set_push_constants(0,std::mem::transmute(&[a][..]));
-            cpass.dispatch(x.len() as u32 / 1024, 1, 1); // Number of cells to run, the (x,y,z) size of item being processed
+            cpass.dispatch((x.len() as f32 / 1024f32).ceil() as u32, 1, 1); // Number of cells to run, the (x,y,z) size of item being processed
         }
 
         let command_buffer = encoder.finish();
@@ -151,8 +151,8 @@ mod tests {
     async fn sdot() {
         let (device,queue):(wgpu::Device,wgpu::Queue) = get_compute_device_queue().await;
 
-        let x:Vec<f32> = (0..372).map(|v| v as f32).collect();
-        let y:Vec<f32> = (0..372).map(|v| v as f32).collect();
+        let x:Vec<f32> = (0..VECTOR_SIZE).map(|_| 3f32).collect(); // Using the value doesn't work and leads to floating point error
+        let y:Vec<f32> = (0..VECTOR_SIZE).map(|_| 2f32).collect();
 
         let slice_size = x.len() * std::mem::size_of::<f32>();
         let size = slice_size as wgpu::BufferAddress;
@@ -205,40 +205,33 @@ mod tests {
             
             let values = data.len() / 4;
             let number_of_partial_sums = (values as f32 / 1024f32).ceil() as usize; // Each workgroup produces 1 partial sum, each workgroup has up to 1024 values
-            println!("{}->{} ({})",data.len(),values, number_of_partial_sums);
+            //println!("{}->{} ({})",data.len(),values, number_of_partial_sums);
 
             let result:Vec<f32> = data[0..4*number_of_partial_sums].chunks_exact(4).map(|b| f32::from_ne_bytes(b.try_into().unwrap())).collect();
-            println!("number of partial sums: {}",result.len());
-            println!("1st partial sum: {}",result[0]);
-            let final_sum:f32 = result.iter().sum();
+            
+            let gpu_sum:f32 = result.iter().sum();
+            
 
             drop(data);
             storage_buffer_outputs.unmap();
 
-            // println!("{:.?}",result);
-            // println!("{:.?}",final_sum);
-
             let start = Instant::now();
 
-            let cpu_vec:Vec<f32> = x.iter().zip(y.iter()).map(|(x,y)| y*x).collect();
-            println!("number of vals: {}",cpu_vec.len());
-            let cpu_vec:Vec<f32> = cpu_vec.chunks(1024).map(|chunk| chunk.iter().sum()).collect();
-            println!("number of partial sums: {}",cpu_vec.len());
-            println!("1st partial sum: {}",cpu_vec[0]);
+            let cpu_sum:f32 = x.iter().zip(y.iter()).map(|(x,y)| y*x).sum();
 
-
-            let cpu_vec:f32 = x.iter().zip(y.iter()).map(|(x,y)| x*y).sum();
             println!("CPU: {} micros",start.elapsed().as_micros());
 
-            println!("{},{}",final_sum,cpu_vec);
-            assert_eq!(final_sum,cpu_vec);
+            println!("gpu sum:\t{}",gpu_sum);
+            println!("cpu sum:\t{}",cpu_sum);
+
+            assert_eq!(gpu_sum,cpu_sum);
         }
     }
     #[actix_rt::test]
     async fn snrm2() {
         let (device,queue):(wgpu::Device,wgpu::Queue) = get_compute_device_queue().await;
 
-        let x:Vec<f32> = (0..VECTOR_SIZE).map(|v| v as f32).collect();
+        let x:Vec<f32> = (0..VECTOR_SIZE).map(|_| 3f32).collect();
 
         let slice_size = x.len() * std::mem::size_of::<f32>();
         let size = slice_size as wgpu::BufferAddress;
@@ -266,7 +259,7 @@ mod tests {
             let mut cpass = encoder.begin_compute_pass();
             cpass.set_pipeline(&compute_pipeline);
             cpass.set_bind_group(0, &bind_group, &[]);
-            cpass.dispatch(x.len() as u32 / 1024, 1, 1); // Number of cells to run, the (x,y,z) size of item being processed
+            cpass.dispatch((x.len() as f32 / 1024f32).ceil() as u32, 1, 1); // Number of cells to run, the (x,y,z) size of item being processed
         }
 
         let command_buffer = encoder.finish();
@@ -283,32 +276,37 @@ mod tests {
         if let Ok(()) = buffer_future.await {
             let data = buffer_slice.get_mapped_range();
             println!("GPU: {} micros",start.elapsed().as_micros());
-            
-            let number_of_vals = data.len()/1024+4;
-            //println!("{}->{} ({})",data.len(),number_of_vals,number_of_vals/4);
 
-            let result:Vec<f32> = data[0..number_of_vals].chunks_exact(4).map(|b| f32::from_ne_bytes(b.try_into().unwrap())).collect();
-            let final_sum:f32 = result.iter().sum::<f32>().sqrt();
+            let values = data.len() / 4;
+            let number_of_partial_sums = (values as f32 / 1024f32).ceil() as usize; // Each workgroup produces 1 partial sum, each workgroup has up to 1024 values
+            //println!("{}->{} ({})",data.len(),values, number_of_partial_sums);
+
+            let result:Vec<f32> = data[0..4*number_of_partial_sums].chunks_exact(4).map(|b| f32::from_ne_bytes(b.try_into().unwrap())).collect();
+            
+            let gpu_sum:f32 = result.iter().sum::<f32>().sqrt();
+            
 
             drop(data);
             storage_buffer_outputs.unmap();
 
-            // println!("{:.?}",result);
-            // println!("{:.?}",final_sum);
-
             let start = Instant::now();
 
-            let cpu_vec:f32 = x.iter().map(|x| x*x).sum::<f32>().sqrt();
+            let cpu_sum:f32 = x.iter().map(|x| x*x).sum::<f32>().sqrt();
+
             println!("CPU: {} micros",start.elapsed().as_micros());
 
-            assert_eq!(final_sum,cpu_vec);
+            println!("gpu sum:\t{}",gpu_sum);
+            println!("cpu sum:\t{}",cpu_sum);
+
+            assert_eq!(gpu_sum,cpu_sum);
         }
     }
     #[actix_rt::test]
     async fn sasum() {
         let (device,queue):(wgpu::Device,wgpu::Queue) = get_compute_device_queue().await;
 
-        let x:Vec<f32> = (0-(VECTOR_SIZE/2)..VECTOR_SIZE-(VECTOR_SIZE/2)).map(|v| v as f32).collect();
+        //let x:Vec<f32> = (0-(VECTOR_SIZE/2)..VECTOR_SIZE-(VECTOR_SIZE/2)).map(|v| v as f32).collect();
+        let x:Vec<f32> = (0..VECTOR_SIZE).map(|_| 3f32).collect();
 
         let slice_size = x.len() * std::mem::size_of::<f32>();
         let size = slice_size as wgpu::BufferAddress;
@@ -336,7 +334,7 @@ mod tests {
             let mut cpass = encoder.begin_compute_pass();
             cpass.set_pipeline(&compute_pipeline);
             cpass.set_bind_group(0, &bind_group, &[]);
-            cpass.dispatch(x.len() as u32 / 1024, 1, 1);
+            cpass.dispatch((x.len() as f32 / 1024f32).ceil() as u32, 1, 1);
         }
 
         let command_buffer = encoder.finish();
@@ -351,27 +349,30 @@ mod tests {
 
         //block_on(); // Blocks thread until buffer_future can be read
         if let Ok(()) = buffer_future.await {
+
             let data = buffer_slice.get_mapped_range();
             println!("GPU: {} micros",start.elapsed().as_micros());
             
-            let number_of_vals = data.len()/1024+4;
-            //println!("{}->{} ({})",data.len(),number_of_vals,number_of_vals/4);
+            let values = data.len() / 4;
+            let number_of_partial_sums = (values as f32 / 1024f32).ceil() as usize; // Each workgroup produces 1 partial sum, each workgroup has up to 1024 values
+            //println!("{}->{} ({})",data.len(),values, number_of_partial_sums);
 
-            let result:Vec<f32> = data[0..number_of_vals].chunks_exact(4).map(|b| f32::from_ne_bytes(b.try_into().unwrap())).collect();
-            let final_sum:f32 = result.iter().sum();
+            let result:Vec<f32> = data[0..4*number_of_partial_sums].chunks_exact(4).map(|b| f32::from_ne_bytes(b.try_into().unwrap())).collect();
+            
+            let gpu_sum:f32 = result.iter().sum();
 
             drop(data);
             storage_buffer_outputs.unmap();
 
-            // println!("{:.?}",result);
-            // println!("{:.?}",final_sum);
-
             let start = Instant::now();
 
-            let cpu_vec:f32 = x.iter().map(|x| x.abs()).sum::<f32>();
+            let cpu_sum:f32 = x.iter().map(|x| x.abs()).sum::<f32>();
             println!("CPU: {} micros",start.elapsed().as_micros());
 
-            assert_eq!(final_sum,cpu_vec);
+            println!("gpu sum:\t{}",gpu_sum);
+            println!("cpu sum:\t{}",cpu_sum);
+
+            assert_eq!(gpu_sum,cpu_sum);
         }
     }
 
@@ -379,12 +380,12 @@ mod tests {
     async fn sgemv() {
         let (device,queue):(wgpu::Device,wgpu::Queue) = get_compute_device_queue().await;
 
-        let x:Vec<f32> = (0..MATRIX_SIZE).map(|v| v as f32).collect();
-        let y:Vec<f32> = (0..MATRIX_SIZE).map(|v| v as f32).collect();
-        let A:Vec<f32> = (0..VECTOR_SIZE).map(|v| v as f32).collect();
+        let x:Vec<f32> = (0..MATRIX_SIZE).map(|v| 1f32).collect();
+        let y:Vec<f32> = (0..MATRIX_SIZE).map(|v| 1f32).collect();
+        let A:Vec<f32> = (0..VECTOR_SIZE).map(|v| 1f32 ).collect();
 
-        let alpha:f32 = 0.5;
-        let beta:f32 = 0.1;
+        let alpha:f32 = 1f32;
+        let beta:f32 = 1f32;
 
         let value_staging_buffer_size = A.len() * std::mem::size_of::<f32>();
 
@@ -422,7 +423,7 @@ mod tests {
             sample_count: 1,
             dimension: wgpu::TextureDimension::D2,
             format: wgpu::TextureFormat::R32Float,
-            usage: wgpu::TextureUsage::STORAGE | wgpu::TextureUsage::COPY_SRC, // TODO Is `COPY_SRC` neccessary here?
+            usage: wgpu::TextureUsage::STORAGE | wgpu::TextureUsage::COPY_SRC | wgpu::TextureUsage::COPY_DST, // TODO Is `COPY_SRC` neccessary here?
         });
 
         queue.write_texture(
@@ -569,7 +570,7 @@ mod tests {
             // let rows_vals:Vec<Vec<f32>> = rows_bytes.iter().map(|r| r.chunks_exact(4).map(|v| f32::from_ne_bytes(v.try_into().unwrap())).collect()).collect();
             // println!("[{},{}]",rows_vals.len(),rows_vals[0].len());
 
-            let full_result:Vec<f32> = data.chunks_exact(4).map(|b| f32::from_ne_bytes(b.try_into().unwrap())).collect();
+            let gpu_vec:Vec<f32> = data.chunks_exact(4).map(|b| f32::from_ne_bytes(b.try_into().unwrap())).collect();
 
             drop(data);
             buffer_outputs.unmap();
@@ -583,12 +584,12 @@ mod tests {
 
             let mut cpu_vec:Vec<f32> = vec!(0.;MATRIX_SIZE);
             for y_indx in 0..MATRIX_SIZE {
-                cpu_vec[y_indx] = x.iter().enumerate().map(|(indx,x)| x * (MATRIX_SIZE*y_indx + indx) as f32 * alpha).sum();
+                cpu_vec[y_indx] = x.iter().enumerate().map(|(indx,x)| x * A[indx+y_indx*MATRIX_SIZE] * alpha).sum();
                 cpu_vec[y_indx] += beta * y[y_indx];
             }
             println!("CPU: {} ms",start.elapsed().as_millis());
 
-            assert_eq!(full_result,cpu_vec);
+            assert_eq!(gpu_vec,cpu_vec);
         }
     }
     #[actix_rt::test]

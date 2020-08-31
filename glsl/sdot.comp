@@ -21,8 +21,12 @@ shared float sdata[sumSubGroupSize];
 void main() {
     uint indx = gl_GlobalInvocationID.x;
     float sum = x[gl_GlobalInvocationID.x] * y[gl_GlobalInvocationID.x];
+    
+    //outputs[gl_GlobalInvocationID.x] = sum;
 
     sum = subgroupAdd(sum);
+
+    //outputs[gl_GlobalInvocationID.x] = sum;
 
     if (gl_SubgroupInvocationID == 0)
     {

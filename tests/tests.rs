@@ -6,7 +6,7 @@ mod tests {
     use itertools::izip;
     use std::time::Instant;
 
-    const MATRIX_SIZE:usize = 1024;
+    const MATRIX_SIZE:usize = 993;
     const VECTOR_SIZE:usize = MATRIX_SIZE * MATRIX_SIZE; 
 
     #[test]
@@ -377,15 +377,17 @@ mod tests {
     }
 
     #[actix_rt::test]
-    async fn sgemv() {
+    async fn sgemv_std() {
         let (device,queue):(wgpu::Device,wgpu::Queue) = get_compute_device_queue().await;
+
+
 
         let x:Vec<f32> = (0..MATRIX_SIZE).map(|v| 1f32).collect();
         let y:Vec<f32> = (0..MATRIX_SIZE).map(|v| 1f32).collect();
-        let A:Vec<f32> = (0..VECTOR_SIZE).map(|v| 1f32 ).collect();
+        let A:Vec<f32> = (0..VECTOR_SIZE).map(|v| 1f32).collect();
 
-        let alpha:f32 = 1f32;
-        let beta:f32 = 1f32;
+        let alpha:f32 = 1.;
+        let beta:f32 = 1.;
 
         let value_staging_buffer_size = A.len() * std::mem::size_of::<f32>();
 
@@ -549,7 +551,7 @@ mod tests {
             cpass.set_pipeline(&compute_pipeline);
             cpass.set_bind_group(0, &bind_group, &[]);
             cpass.set_push_constants(0,std::mem::transmute(&[alpha,beta][..]));
-            cpass.dispatch(MATRIX_SIZE as u32 / 32, MATRIX_SIZE as u32 / 32, 1); // Number of cells to run, the (x,y,z) size of item being processed
+            cpass.dispatch((MATRIX_SIZE as f32 / 32f32).ceil() as u32, (MATRIX_SIZE as f32 / 32f32).ceil() as u32, 1); // Number of cells to run, the (x,y,z) size of item being processed
         }
 
         let start = Instant::now();
@@ -563,7 +565,7 @@ mod tests {
         //block_on(); // Blocks thread until buffer_future can be read
         if let Ok(()) = buffer_future.await {
             let data = buffer_slice.get_mapped_range();
-            println!("GPU: {} ms",start.elapsed().as_millis());
+            println!("GPU: {} micros",start.elapsed().as_micros());
 
             // let rows_bytes:Vec<Vec<u8>> = data.chunks_exact(used_buffer_row_size as usize).map(|r| r[0..40].to_vec()).collect();
             // println!("[{},{}]",rows_bytes.len(),rows_bytes[0].len());
@@ -582,12 +584,16 @@ mod tests {
 
             let start = Instant::now();
 
-            let mut cpu_vec:Vec<f32> = vec!(0.;MATRIX_SIZE);
-            for y_indx in 0..MATRIX_SIZE {
-                cpu_vec[y_indx] = x.iter().enumerate().map(|(indx,x)| x * A[indx+y_indx*MATRIX_SIZE] * alpha).sum();
+            let mut cpu_vec:Vec<f32> = vec!(0.;y.len());
+            for y_indx in 0..y.len() {
+                cpu_vec[y_indx] = x.iter().enumerate().map(|(indx,x_val)| {
+                    *x_val * A[indx + y_indx * x.len()] * alpha
+                }).sum();
                 cpu_vec[y_indx] += beta * y[y_indx];
             }
-            println!("CPU: {} ms",start.elapsed().as_millis());
+            println!("CPU: {} micros",start.elapsed().as_micros());
+
+            println!("{} {}",gpu_vec.len(),cpu_vec.len());
 
             assert_eq!(gpu_vec,cpu_vec);
         }
@@ -596,9 +602,9 @@ mod tests {
     async fn sgemv_short() {
         let (device,queue):(wgpu::Device,wgpu::Queue) = get_compute_device_queue().await;
 
-        let x:Vec<f32> = (0..MATRIX_SIZE).map(|v| v as f32).collect();
-        let y:Vec<f32> = (0..MATRIX_SIZE).map(|v| v as f32).collect();
-        let A:Vec<f32> = (0..VECTOR_SIZE).map(|v| v as f32).collect();
+        let x:Vec<f32> = (0..MATRIX_SIZE).map(|v| 1f32).collect();
+        let y:Vec<f32> = (0..MATRIX_SIZE).map(|v| 1f32).collect();
+        let A:Vec<f32> = (0..VECTOR_SIZE).map(|v| 1f32).collect();
 
         let alpha:f32 = 0.5;
         let beta:f32 = 0.1;
@@ -728,7 +734,7 @@ mod tests {
             cpass.set_pipeline(&compute_pipeline);
             cpass.set_bind_group(0, &bind_group, &[]);
             cpass.set_push_constants(0,std::mem::transmute(&[alpha,beta][..]));
-            cpass.dispatch(MATRIX_SIZE as u32 / 32, MATRIX_SIZE as u32 / 32, 1); // Number of cells to run, the (x,y,z) size of item being processed
+            cpass.dispatch((MATRIX_SIZE as f32 / 32f32).ceil() as u32, (MATRIX_SIZE as f32 / 32f32).ceil() as u32, 1); // Number of cells to run, the (x,y,z) size of item being processed
         }
         encoder.copy_texture_to_buffer(
             wgpu::TextureCopyViewBase { texture: &texture_A, mip_level:0,origin: wgpu::Origin3d{x:0,y:0,z:0} },
@@ -775,12 +781,12 @@ mod tests {
 
                 //println!("y: {:.?}",new_y);
 
-                let mut new_A:Vec<f32> = vec!(0f32;MATRIX_SIZE);
+                let mut gpu_vec:Vec<f32> = vec!(0f32;MATRIX_SIZE);
                 for y_indx in 0..MATRIX_SIZE {
-                    new_A[y_indx] = rows_vals[y_indx].iter().sum::<f32>() + new_y[y_indx];
+                    gpu_vec[y_indx] = rows_vals[y_indx].iter().sum::<f32>() + new_y[y_indx];
                 }
 
-                println!("GPU: {} ms",start.elapsed().as_millis());
+                println!("GPU: {} micros",start.elapsed().as_micros());
 
                 drop(y_data);
                 storage_buffer_y.unmap();
@@ -794,16 +800,27 @@ mod tests {
 
                 // Running CPU
                 //println!("cpu matrix:");
+                // let start = Instant::now();
+
+                // let mut cpu_vec:Vec<f32> = vec!(0.;MATRIX_SIZE);
+                // for y_indx in 0..MATRIX_SIZE {
+                //     cpu_vec[y_indx] = x.iter().enumerate().map(|(indx,x)| x * (MATRIX_SIZE*y_indx + indx) as f32 * alpha).sum();
+                //     cpu_vec[y_indx] += beta * y[y_indx];
+                // }
+                // println!("CPU: {} ms",start.elapsed().as_millis());
+
                 let start = Instant::now();
 
                 let mut cpu_vec:Vec<f32> = vec!(0.;MATRIX_SIZE);
-                for y_indx in 0..MATRIX_SIZE {
-                    cpu_vec[y_indx] = x.iter().enumerate().map(|(indx,x)| x * (MATRIX_SIZE*y_indx + indx) as f32 * alpha).sum();
+                for y_indx in 0..y.len() {
+                    cpu_vec[y_indx] = x.iter().enumerate().map(|(indx,x_val)| {
+                        *x_val * (indx + y_indx * x.len()) as f32 * alpha
+                    }).sum();
                     cpu_vec[y_indx] += beta * y[y_indx];
                 }
-                println!("CPU: {} ms",start.elapsed().as_millis());
+                println!("CPU: {} micros",start.elapsed().as_micros());
 
-                assert_eq!(new_A,cpu_vec);
+                assert_eq!(gpu_vec,cpu_vec);
             }
         }
     }

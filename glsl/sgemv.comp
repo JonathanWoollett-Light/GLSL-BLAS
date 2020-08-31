@@ -37,14 +37,17 @@ void main() {
     imageStore(internal_holder,ivec2(gl_GlobalInvocationID.x,gl_GlobalInvocationID.y),vec4(new_A));
 
     //barrier(); // TODO Is this neccesaary?
+    //outputs[gl_GlobalInvocationID.x] = 5;
 
     if (gl_GlobalInvocationID.x == 0) {
         float sum = 0;
-        for(int i = 0; i<size.x; i++) {
+        for(int i=0; i<size.x; i++) {
             sum += imageLoad(internal_holder,ivec2(i,gl_GlobalInvocationID.y)).x;
         }
-
+        //barrier();
         float new_y = y[gl_GlobalInvocationID.y] * beta;
+        //outputs[gl_GlobalInvocationID.y] = gl_GlobalInvocationID.y;
+        //outputs[gl_GlobalInvocationID.y] = imageLoad(internal_holder,ivec2(size.x-1,gl_GlobalInvocationID.y)).x;
         outputs[gl_GlobalInvocationID.y] = sum * alpha + new_y;
     }
 }

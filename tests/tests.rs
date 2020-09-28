@@ -6,7 +6,7 @@ mod tests {
     use itertools::izip;
     use std::time::Instant;
 
-    const MATRIX_SIZE:usize = 993;
+    const MATRIX_SIZE:usize = 1000;
     const VECTOR_SIZE:usize = MATRIX_SIZE * MATRIX_SIZE; 
 
     #[test]
@@ -380,8 +380,6 @@ mod tests {
     async fn sgemv_std() {
         let (device,queue):(wgpu::Device,wgpu::Queue) = get_compute_device_queue().await;
 
-
-
         let x:Vec<f32> = (0..MATRIX_SIZE).map(|v| 1f32).collect();
         let y:Vec<f32> = (0..MATRIX_SIZE).map(|v| 1f32).collect();
         let A:Vec<f32> = (0..VECTOR_SIZE).map(|v| 1f32).collect();
@@ -595,7 +593,15 @@ mod tests {
 
             println!("{} {}",gpu_vec.len(),cpu_vec.len());
 
-            assert_eq!(gpu_vec,cpu_vec);
+            for i in 0..gpu_vec.len() {
+                if gpu_vec[i] != cpu_vec[i] {
+                    print!("{}: {} Vs {}",i,gpu_vec[i],cpu_vec[i]);
+                    return;
+                }
+                
+            }
+
+            //assert_eq!(gpu_vec,cpu_vec);
         }
     }
     #[actix_rt::test]
@@ -822,6 +828,210 @@ mod tests {
 
                 assert_eq!(gpu_vec,cpu_vec);
             }
+        }
+    }
+
+    #[actix_rt::test]
+    async fn sgemv2() {
+        let (device,queue):(wgpu::Device,wgpu::Queue) = get_compute_device_queue().await;
+
+        let x:Vec<f32> = (0..MATRIX_SIZE).map(|v| 1f32).collect();
+        let y:Vec<f32> = (0..MATRIX_SIZE).map(|v| 1f32).collect();
+        let A:Vec<f32> = (0..VECTOR_SIZE).map(|v| 1f32).collect();
+
+        let alpha:f32 = 1.;
+        let beta:f32 = 1.;
+
+        let value_staging_buffer_size = A.len() * std::mem::size_of::<f32>();
+
+        let value_staging_buffer_row_size:usize = MATRIX_SIZE * std::mem::size_of::<f32>();
+        let used_buffer_row_size:usize = ((value_staging_buffer_row_size as f32 / 256.).ceil() * 256.) as usize;
+        let used_buffer_size:usize = MATRIX_SIZE * used_buffer_row_size;
+        let buffer_address_size = used_buffer_size as wgpu::BufferAddress;
+
+        //println!("{} -> {}",value_staging_buffer_size,used_buffer_size);
+    
+        let storage_buffer_x = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
+            label: Some("Storage Buffer X"),
+            contents: bytemuck::cast_slice(&x),
+            usage: wgpu::BufferUsage::STORAGE | wgpu::BufferUsage::MAP_WRITE
+        });
+        let storage_buffer_y = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
+            label: Some("Storage Buffer Y"),
+            contents: bytemuck::cast_slice(&y),
+            usage: wgpu::BufferUsage::STORAGE | wgpu::BufferUsage::MAP_WRITE
+        });
+
+        let texture_A = device.create_texture(&wgpu::TextureDescriptor {
+            label: Some("Texture A"),
+            size: wgpu::Extent3d { width: MATRIX_SIZE as u32, height: MATRIX_SIZE as u32, depth:1 },
+            mip_level_count: 1,
+            sample_count: 1,
+            dimension: wgpu::TextureDimension::D2,
+            format: wgpu::TextureFormat::R32Float,
+            usage: wgpu::TextureUsage::STORAGE | wgpu::TextureUsage::COPY_SRC | wgpu::TextureUsage::COPY_DST, // TODO Is `COPY_SRC` neccessary here?
+        });
+
+        queue.write_texture(
+            wgpu::TextureCopyViewBase {
+                texture: &texture_A,
+                mip_level: 0,
+                origin: wgpu::Origin3d { x:0,y:0,z:0 }
+            },
+            bytemuck::cast_slice(&A),
+            wgpu::TextureDataLayout { 
+                offset: 0,
+                bytes_per_row: value_staging_buffer_row_size as u32,
+                rows_per_image: 0
+            },
+            wgpu::Extent3d { width: MATRIX_SIZE as u32, height: MATRIX_SIZE as u32, depth:1 }
+        );
+
+        let buffer_outputs = device.create_buffer(&wgpu::BufferDescriptor {
+            label: Some("Storage Buffer Outputs"),
+            size: (MATRIX_SIZE * std::mem::size_of::<f32>()) as wgpu::BufferAddress,
+            usage: wgpu::BufferUsage::STORAGE | wgpu::BufferUsage::MAP_READ,
+            mapped_at_creation: false,
+        });
+
+        let views:Vec<wgpu::TextureView> = vec![
+            texture_A.create_view(&wgpu::TextureViewDescriptor::default())
+        ];
+
+        let bindgroup_layout_entries = vec![
+            wgpu::BindGroupLayoutEntry {
+                binding: 0,
+                visibility: wgpu::ShaderStage::COMPUTE,
+                ty: wgpu::BindingType::StorageBuffer {
+                    dynamic: false,
+                    readonly: false,
+                    min_binding_size: None,
+                },
+                count: None,
+            },
+            wgpu::BindGroupLayoutEntry {
+                binding: 1,
+                visibility: wgpu::ShaderStage::COMPUTE,
+                ty: wgpu::BindingType::StorageBuffer {
+                    dynamic: false,
+                    readonly: false,
+                    min_binding_size: None,
+                },
+                count: None,
+            },
+            wgpu::BindGroupLayoutEntry {
+                binding: 2,
+                visibility: wgpu::ShaderStage::COMPUTE,
+                ty: wgpu::BindingType::StorageTexture {
+                    dimension: wgpu::TextureViewDimension::D2,
+                    format: wgpu::TextureFormat::R32Float,
+                    readonly: false,
+                },
+                count: None,
+            },
+            wgpu::BindGroupLayoutEntry {
+                binding: 3,
+                visibility: wgpu::ShaderStage::COMPUTE,
+                ty: wgpu::BindingType::StorageBuffer {
+                    dynamic: false,
+                    readonly: false,
+                    min_binding_size: None,
+                },
+                count: None,
+            }
+        ];
+        let bindgroup_entries = vec![
+            wgpu::BindGroupEntry {
+                binding: 0,
+                resource: wgpu::BindingResource::Buffer(storage_buffer_x.slice(..)),
+            },
+            wgpu::BindGroupEntry {
+                binding: 1,
+                resource: wgpu::BindingResource::Buffer(storage_buffer_y.slice(..)),
+            },
+            wgpu::BindGroupEntry {
+                binding: 2,
+                resource: wgpu::BindingResource::TextureView(&views[0])
+            },
+            wgpu::BindGroupEntry {
+                binding: 3,
+                resource: wgpu::BindingResource::Buffer(buffer_outputs.slice(..)),
+            }
+        ];
+
+        let bind_group_layout = device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
+            label: None,
+            entries: &bindgroup_layout_entries,
+        });
+        let bind_group = device.create_bind_group(&wgpu::BindGroupDescriptor {
+            label: None,
+            layout: &bind_group_layout,
+            entries: &bindgroup_entries,
+        });
+
+        let shader = device.create_shader_module(wgpu::include_spirv!("../spir-v/sgemv2.spv"));
+
+        let compute_pipeline = get_compute_pipeline(&device,bind_group_layout,shader,&[]);
+
+        let mut encoder = device.create_command_encoder(&wgpu::CommandEncoderDescriptor { label: None });
+
+        unsafe {
+            let mut cpass = encoder.begin_compute_pass();
+            cpass.set_pipeline(&compute_pipeline);
+            cpass.set_bind_group(0, &bind_group, &[]);
+            cpass.dispatch((MATRIX_SIZE as f32 / 1024f32).ceil() as u32, MATRIX_SIZE as u32, 1); // Number of cells to run, the (x,y,z) size of item being processed
+        }
+
+        let start = Instant::now();
+
+        queue.submit(Some(encoder.finish()));
+
+        let buffer_slice = buffer_outputs.slice(..);
+        let buffer_future = buffer_slice.map_async(wgpu::MapMode::Read);
+        device.poll(wgpu::Maintain::Wait);
+
+        //block_on(); // Blocks thread until buffer_future can be read
+        if let Ok(()) = buffer_future.await {
+            let data = buffer_slice.get_mapped_range();
+            println!("GPU: {} micros",start.elapsed().as_micros());
+
+            // let rows_bytes:Vec<Vec<u8>> = data.chunks_exact(used_buffer_row_size as usize).map(|r| r[0..40].to_vec()).collect();
+            // println!("[{},{}]",rows_bytes.len(),rows_bytes[0].len());
+            // let rows_vals:Vec<Vec<f32>> = rows_bytes.iter().map(|r| r.chunks_exact(4).map(|v| f32::from_ne_bytes(v.try_into().unwrap())).collect()).collect();
+            // println!("[{},{}]",rows_vals.len(),rows_vals[0].len());
+
+            let gpu_vec:Vec<f32> = data.chunks_exact(4).map(|b| f32::from_ne_bytes(b.try_into().unwrap())).collect();
+
+            drop(data);
+            buffer_outputs.unmap();
+
+            println!("gpu_vec: {:.?}",gpu_vec);
+            //println!("length: {}",full_result.len());
+
+            //println!("GPU: {} micros",start.elapsed().as_micros());
+
+            let start = Instant::now();
+
+            let mut cpu_vec:Vec<f32> = vec!(0.;y.len());
+            for y_indx in 0..y.len() {
+                cpu_vec[y_indx] = x.iter().enumerate().map(|(indx,x_val)| {
+                    *x_val * A[indx + y_indx * x.len()] * alpha
+                }).sum();
+                cpu_vec[y_indx] += beta * y[y_indx];
+            }
+            println!("CPU: {} micros",start.elapsed().as_micros());
+
+            println!("{} {}",gpu_vec.len(),cpu_vec.len());
+
+            for i in 0..gpu_vec.len() {
+                if gpu_vec[i] != cpu_vec[i] {
+                    print!("{}: {} Vs {}",i,gpu_vec[i],cpu_vec[i]);
+                    return;
+                }
+                
+            }
+
+            assert_eq!(gpu_vec,cpu_vec);
         }
     }
    

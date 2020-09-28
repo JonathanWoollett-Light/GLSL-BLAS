@@ -1,0 +1,57 @@
+#version 450
+#extension GL_KHR_shader_subgroup_arithmetic : enable
+#extension GL_EXT_shader_atomic_float: enable
+
+layout(local_size_x = 1024, local_size_y = 1, local_size_z = 1) in;
+
+layout(binding = 0) buffer Buffer0 {
+    float x[];
+};
+layout(binding = 1) buffer Buffer2 {
+    float y[];
+};
+
+layout(r32f,binding = 2) uniform image2D A;
+
+layout(binding = 3) buffer BufferOutputs {
+    float outputs[];
+};
+
+
+const int sumSubGroupSize = 64; // Workgroup size is 1024, subgroup size is expected 64, therefore 64 subgroups
+shared float sdata[sumSubGroupSize]; // Must be >= gl_NumSubgroups
+
+void main() {
+    uint indx = gl_GlobalInvocationID.x;
+
+    ivec2 size = ivec2(imageSize(A));
+
+    // TODO Is this actually neccessary?
+    if (gl_GlobalInvocationID.x < size.x && gl_GlobalInvocationID.y < size.y) {
+        float sum = imageLoad(A,ivec2(gl_GlobalInvocationID.x,gl_GlobalInvocationID.y)).x;
+
+        sum = subgroupInclusiveAdd(sum);
+
+        // Last invocation in subgroup, or last invocation in row
+        //  This is for the case with the last subgroup in the row where it is likely it will contain inactive invocations (invocations out of bounds of the row)
+        if (gl_SubgroupInvocationID == gl_SubgroupSize - 1 || gl_GlobalInvocationID.x == size.x-1) // Last invocation in subgroup
+        {
+            sdata[gl_SubgroupID] = sum;
+        }
+
+        barrier();
+
+        // Sums all values sdata[0:sumSubGroupSize] (inclusive)
+        if (gl_SubgroupID == 0) { // This only works when the subgroup size is >= the number of subgroups (which in practice it always is).
+            sum = gl_SubgroupInvocationID < gl_NumSubgroups ? sdata[gl_SubgroupInvocationID] : 0;
+            sum = subgroupAdd(sum);
+        }
+
+        if (gl_LocalInvocationID.x == 0) {
+            // Assuming outputs[gl_GlobalInvocationID.y]=0 upon intialisation, this should work
+
+            atomicAdd(outputs[gl_GlobalInvocationID.y],sum);
+            //outputs[gl_GlobalInvocationID.y] += sum; // This needs to be `atomicAdd` to safely handle multiple workgroups adding to same variable
+        }
+    }
+}

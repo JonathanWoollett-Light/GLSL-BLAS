@@ -1,8 +1,12 @@
-// WIP: THIS IS NOT DONE AND WILL NOT WORK
+// ----------------------------------------------------------------
+// THIS IS BAD AND NOT DONE
+// I WOULD NOT RECOMMEND YOU READ THESE
+// ----------------------------------------------------------------
 #version 450
 #extension GL_KHR_shader_subgroup_arithmetic : enable
 
-layout(local_size_x = 20, local_size_y = 20, local_size_z = 1) in;
+// x=rows in a, y=cols in b, z=cols in a/rows in b
+layout(local_size_x = 32, local_size_y = 32, local_size_z = 1) in;
 
 layout(r32f,binding = 0) uniform image2D A; // m by k
 layout(r32f,binding = 1) uniform image2D B; // k by n
@@ -25,7 +29,9 @@ void main() {
 
     ivec2 size = ivec2(imageSize(A));
 
-    float val_A = imageLoad(A,ivec2(gl_GlobalInvocationID.x,gl_GlobalInvocationID.y)).x;
+    float a = imageLoad(A,ivec2(gl_GlobalInvocationID.x,gl_GlobalInvocationID.z)).x;
+    float b = imageLoad(A,ivec2(gl_GlobalInvocationID.z,gl_GlobalInvocationID.y)).x;
+    float c = a * b;
     
     // Multiplier in scalars
     float new_A = val_A * x[gl_GlobalInvocationID.x];

@@ -1,3 +1,8 @@
+// ----------------------------------------------------------------
+// MOST OF THESE ARE BAD AND MAY NOT EVEN WORK
+// THEY ARE JUST HERE FORE FUTURE REFERENCE WHEN I CLEAN THEM UP
+// I WOULD NOT RECOMMEND YOU READ THESE
+// ----------------------------------------------------------------
 #version 450
 #extension GL_KHR_shader_subgroup_arithmetic : enable
 #extension GL_EXT_shader_atomic_float: enable
@@ -17,7 +22,6 @@ layout(binding = 3) buffer BufferOutputs {
     float outputs[];
 };
 
-
 const int sumSubGroupSize = 64; // Workgroup size is 1024, subgroup size is expected 64, therefore 64 subgroups
 shared float sdata[sumSubGroupSize]; // Must be >= gl_NumSubgroups
 
@@ -32,10 +36,11 @@ void main() {
 
         sum = subgroupInclusiveAdd(sum);
 
-        // Last invocation in subgroup, or last invocation in row
-        //  This is for the case with the last subgroup in the row where it is likely it will contain inactive invocations (invocations out of bounds of the row)
-        if (gl_SubgroupInvocationID == gl_SubgroupSize - 1 || gl_GlobalInvocationID.x == size.x-1) // Last invocation in subgroup
-        {
+        // Last invocation in subgroup, or last invocation in row.
+        //
+        // The last invocation in row is the special case with the last subgroup in the row where it is likely it
+        //  will contain inactive invocations, thus the last invocation in the subgroup will be out of bounds.
+        if (gl_SubgroupInvocationID == gl_SubgroupSize - 1 || gl_GlobalInvocationID.x == size.x-1) {
             sdata[gl_SubgroupID] = sum;
         }
 

@@ -1,3 +1,9 @@
+// ----------------------------------------------------------------
+// MOST OF THESE ARE BAD AND MAY NOT EVEN WORK
+// THEY ARE JUST HERE FORE FUTURE REFERENCE WHEN I CLEAN THEM UP
+// I WOULD NOT RECOMMEND YOU READ THESE
+// ----------------------------------------------------------------
+
 #[cfg(test)]
 mod tests {
     use futures::executor::block_on;
@@ -6,14 +12,100 @@ mod tests {
     use itertools::izip;
     use std::time::Instant;
 
-    const MATRIX_SIZE:usize = 1000;
+    const MATRIX_SIZE:usize = 4;
     const VECTOR_SIZE:usize = MATRIX_SIZE * MATRIX_SIZE; 
 
-    #[test]
-    fn basic() {
-        assert_eq!(4,2+2);
-    }
+    #[actix_rt::test]
+    async fn atomic_array_sum() {
+        let (device,queue):(wgpu::Device,wgpu::Queue) = get_compute_device_queue().await;
+
+        //let x:Vec<f32> = (0-(VECTOR_SIZE/2)..VECTOR_SIZE-(VECTOR_SIZE/2)).map(|v| v as f32).collect();
+        let x:Vec<f32> = (0..VECTOR_SIZE).map(|_| 3f32).collect();
+
+        println!("x.len(): {}",x.len());
+
+        let internal_size = (std::mem::size_of::<f32>() * x.len()/2) as wgpu::BufferAddress;
+        println!("internal_size: {}",internal_size);
+        let output_size = std::mem::size_of::<f32>() as wgpu::BufferAddress;
     
+        let storage_buffer_x = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
+            label: Some("Storage Buffer X"),
+            contents: bytemuck::cast_slice(&x),
+            usage: wgpu::BufferUsage::STORAGE | wgpu::BufferUsage::MAP_WRITE
+        });
+        let storage_buffer_internal = device.create_buffer(&wgpu::BufferDescriptor {
+            label: Some("Storage Buffer Internal"),
+            size: internal_size,
+            usage: wgpu::BufferUsage::STORAGE | wgpu::BufferUsage::MAP_READ,
+            mapped_at_creation: false,
+        });
+        let storage_buffer_outputs = device.create_buffer(&wgpu::BufferDescriptor {
+            label: Some("Storage Buffer Outputs"),
+            size: output_size,
+            usage: wgpu::BufferUsage::STORAGE | wgpu::BufferUsage::MAP_READ,
+            mapped_at_creation: false,
+        });
+
+        let (bind_group,bind_group_layout) = get_compute_bind_group(&device,&[&storage_buffer_x,&storage_buffer_internal,&storage_buffer_outputs]);
+
+        let shader = device.create_shader_module(wgpu::include_spirv!("../spir-v/atomicArraySum.spv"));
+
+        let compute_pipeline = get_compute_pipeline(&device,bind_group_layout,shader,&[std::mem::size_of::<u32>()]);
+
+        //panic!("got here?");
+
+        let mut encoder = device.create_command_encoder(&wgpu::CommandEncoderDescriptor { label: None });
+        {
+            let mut cpass = encoder.begin_compute_pass();
+            cpass.set_pipeline(&compute_pipeline);
+            cpass.set_bind_group(0, &bind_group, &[]);
+            cpass.set_push_constants(0u32, &[VECTOR_SIZE as u32]);
+            cpass.dispatch((x.len() as f32 / 1024f32).ceil() as u32, 1, 1);
+        }
+
+        //panic!("got here?");
+
+        let command_buffer = encoder.finish();
+
+        let start = Instant::now();
+
+        queue.submit(Some(command_buffer));
+
+        let internal_buffer_slice = storage_buffer_internal.slice(..);
+        let internal_buffer_future = internal_buffer_slice.map_async(wgpu::MapMode::Read);
+
+        let buffer_slice = storage_buffer_outputs.slice(..);
+        let buffer_future = buffer_slice.map_async(wgpu::MapMode::Read);
+        device.poll(wgpu::Maintain::Wait);
+
+        //block_on(); // Blocks thread until buffer_future can be read
+        if let Ok(()) = buffer_future.await {
+            if let Ok(()) = internal_buffer_future.await {
+                let data = buffer_slice.get_mapped_range();
+                println!("GPU: {} micros",start.elapsed().as_micros());
+
+                let internal_data = internal_buffer_slice.get_mapped_range();
+                let internal_values:Vec<f32> = internal_data[0..internal_size as usize].chunks_exact(4).map(|b| f32::from_ne_bytes(b.try_into().unwrap())).collect();
+                println!("internal_data: {:.2?}",internal_values);
+
+                let gpu_sum = f32::from_ne_bytes(data[0..4].try_into().unwrap());
+
+                drop(data);
+                storage_buffer_outputs.unmap();
+
+                let start = Instant::now();
+
+                let cpu_sum:f32 = x.iter().map(|x| x.abs()).sum::<f32>();
+                println!("CPU: {} micros",start.elapsed().as_micros());
+
+                println!("gpu sum:\t{}",gpu_sum);
+                println!("cpu sum:\t{}",cpu_sum);
+
+                assert_eq!(gpu_sum,cpu_sum);
+                //assert!(false);
+            }
+        }
+    }
     #[actix_rt::test]
     async fn sscal() {
         let (device,queue):(wgpu::Device,wgpu::Queue) = get_compute_device_queue().await;

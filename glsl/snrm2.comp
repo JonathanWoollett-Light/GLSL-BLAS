@@ -3,12 +3,15 @@
 
 layout(local_size_x = 1024, local_size_y = 1, local_size_z = 1) in;
 
+// For explanation of how summation works pls see 'sasum_subgroup.comp'.
+// Other than that, it's pretty simple.
+
 layout(binding = 0) buffer Buffer0 {
     float x[];
 };
 layout(binding = 1) buffer Output
 {
-   float outputs[];
+   float total;
 };
 
 const int sumSubGroupSize = 64;
@@ -24,10 +27,7 @@ void main() {
     // Sums
     sum = subgroupAdd(sum);
 
-    if (gl_SubgroupInvocationID == 0)
-    {
-        sdata[gl_SubgroupID] = sum;
-    }
+    if (subgroupElect()) sdata[gl_SubgroupID] = sum;
 
     barrier();
 
@@ -37,8 +37,5 @@ void main() {
         sum = subgroupAdd(sum);
     }
 
-    if (gl_LocalInvocationID.x == 0)
-    {
-        outputs[gl_WorkGroupID.x] = sum;
-    }
+    if (gl_LocalInvocationID.x == 0) atomicAdd(total,sum);
 }

@@ -19,8 +19,6 @@ const int sumSubGroupSize = 64;
 shared float sdata[sumSubGroupSize];
 
 void main() {
-    uint indx = gl_GlobalInvocationID.x;
-
     // Squares
     float sum = x[gl_GlobalInvocationID.x] * x[gl_GlobalInvocationID.x];
 

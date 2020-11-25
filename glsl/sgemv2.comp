@@ -1,7 +1,6 @@
 // ----------------------------------------------------------------
-// MOST OF THESE ARE BAD AND MAY NOT EVEN WORK
-// THEY ARE JUST HERE FORE FUTURE REFERENCE WHEN I CLEAN THEM UP
-// I WOULD NOT RECOMMEND YOU READ THESE
+// THIS IS BAD AND JUST HERE FORE FUTURE REFERENCE
+// I WOULD NOT RECOMMEND YOU READ THIS
 // ----------------------------------------------------------------
 #version 450
 #extension GL_KHR_shader_subgroup_arithmetic : enable

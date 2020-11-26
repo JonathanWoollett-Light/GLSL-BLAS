@@ -15,8 +15,6 @@ jobs:
     steps:
     - uses: actions/checkout@v2
     - name: Build
-      run: |
-        mkdir spirv
-        FOR %%v IN (glsl/*) DO glslc "glsl/%%v" -o "spirv/%%v.spv" --target-env=vulkan1.1
+      run: FOR %v IN (glsl/*.comp) DO glslc "glsl/%v" -o "glsl/%v.spv" --target-env=vulkan1.1
     - name: Validate
-      run: FOR %%v IN (spirv/*) DO spirv-val "spirv/%%v"
+      run: FOR %v IN (glsl/*.spv) DO spirv-val "glsl/%v"

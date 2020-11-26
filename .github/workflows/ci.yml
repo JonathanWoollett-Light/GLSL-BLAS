@@ -1,0 +1,22 @@
+name: CI
+
+on:
+  push:
+    branches: [ master ]
+  pull_request:
+    branches: [ master ]
+
+  workflow_dispatch:
+jobs:
+  build:
+
+    runs-on: windows-latest
+
+    steps:
+    - uses: actions/checkout@v2
+    - name: Build
+      run: |
+        mkdir spirv
+        FOR %v IN (glsl/*) DO glslc "glsl/%v" -o "spirv/%v.spv" --target-env=vulkan1.1
+    - name: Validate
+      run: FOR %v IN (spirv/*) DO spirv-val "spirv/%v"

@@ -15,6 +15,8 @@ jobs:
     steps:
     - uses: actions/checkout@v2
     - name: Build
+      shell: bash
       run: for file in glsl/*.comp; do glslc.exe "$file" -o "glsl/$(basename "$file" .comp).spv" --target-env=vulkan1.1; done 
     - name: Validate
+      shell: bash
       run: for file in glsl/*.spv; do spirv-val.exe "$file"; done 

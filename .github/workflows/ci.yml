@@ -10,11 +10,11 @@ on:
 jobs:
   build:
 
-    runs-on: windows-latest
+    runs-on: ubuntu-latest
 
     steps:
     - uses: actions/checkout@v2
     - name: Build
-      run: FOR %v IN (glsl/*.comp) DO glslc "glsl/%v" -o "glsl/%v.spv" --target-env=vulkan1.1
+      run: for file in glsl/*.comp; do glslc.exe "$file" -o "glsl/$(basename "$file" .comp).spv" --target-env=vulkan1.1; done 
     - name: Validate
-      run: FOR %v IN (glsl/*.spv) DO spirv-val "glsl/%v"
+      run: for file in glsl/*.spv; do spirv-val.exe "$file"; done 

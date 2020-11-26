@@ -14,13 +14,15 @@ layout(binding = 1) buffer Output
    float total;
 };
 
-const int sumSubGroupSize = 64;
+const int sumSubGroupSize = 64; // = workgroup size / subgroup size = 1024 / 64
 
 shared float sdata[sumSubGroupSize];
 
 void main() {
+    uint indx = gl_GlobalInvocationID.x;
+
     // Squares
-    float sum = x[gl_GlobalInvocationID.x] * x[gl_GlobalInvocationID.x];
+    float sum = x[indx] * x[indx];
 
     // Sums
     sum = subgroupAdd(sum);

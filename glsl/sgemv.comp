@@ -1,6 +1,7 @@
 // ----------------------------------------------------------------
-// THIS IS BAD AND JUST HERE FORE FUTURE REFERENCE
-// I WOULD NOT RECOMMEND YOU READ THIS
+// MOST OF THESE ARE BAD AND MAY NOT EVEN WORK
+// THEY ARE JUST HERE FORE FUTURE REFERENCE WHEN I CLEAN THEM UP
+// I WOULD NOT RECOMMEND YOU READ THESE
 // ----------------------------------------------------------------
 #version 450
 #extension GL_KHR_shader_subgroup_arithmetic : enable
@@ -17,21 +18,23 @@ layout(binding = 1) buffer Buffer2 {
 
 layout(r32f,binding = 2) uniform image2D A;
 
-layout(binding = 3) buffer BufferOutputs {
-    float outputs[];
+layout(push_constant) uniform PushConsts {
+    float alpha; // TODO Can these be declared on the same line?
+    float beta;
 };
 
-const int sumSubGroupSize = 64; // Workgroup size is 1024, subgroup size is expected 64, therefore 64 subgroups
-shared float sdata[sumSubGroupSize]; // Must be >= gl_NumSubgroups
+const int sumSubGroupSize = 64; // = workgroup size / subgroup size = 1024 / 64
+shared float sdata[sumSubGroupSize];
 
 void main() {
-    uint indx = gl_GlobalInvocationID.x;
+    uint x_indx = gl_GlobalInvocationID.x;
+    uint y_indx = gl_GlobalInvocationID.y;
 
     ivec2 size = ivec2(imageSize(A));
 
     // TODO Is this actually neccessary?
-    if (gl_GlobalInvocationID.x < size.x && gl_GlobalInvocationID.y < size.y) {
-        float sum = imageLoad(A,ivec2(gl_GlobalInvocationID.x,gl_GlobalInvocationID.y)).x;
+    if (x_indx < size.x && y_indx < size.y) {
+        float sum = x[y_indx] * imageLoad(A,ivec2(x_indx,y_indx)).x;
 
         sum = subgroupInclusiveAdd(sum);
 
@@ -39,8 +42,8 @@ void main() {
         //
         // The last invocation in row is the special case with the last subgroup in the row where it is likely it
         //  will contain inactive invocations, thus the last invocation in the subgroup will be out of bounds.
-        if (gl_SubgroupInvocationID == gl_SubgroupSize - 1 || gl_GlobalInvocationID.x == size.x-1) {
-            sdata[gl_SubgroupID] = sum;
+        if (gl_SubgroupInvocationID == gl_SubgroupSize - 1 || x_indx == size.x-1) {
+            sdata[gl_SubgroupID] = alpha * sum;
         }
 
         barrier();
@@ -51,11 +54,13 @@ void main() {
             sum = subgroupAdd(sum);
         }
 
-        if (gl_LocalInvocationID.x == 0) {
-            // Assuming outputs[gl_GlobalInvocationID.y]=0 upon intialisation, this should work
+        // For 1 invocation in each matrix row, add vector value to row sum
+        if (x_indx == 0) y[y_indx] *= beta; // This must occur before `atomicAdd(outputs[y_indx],sum);`
 
-            atomicAdd(outputs[gl_GlobalInvocationID.y],sum);
-            //outputs[gl_GlobalInvocationID.y] += sum; // This needs to be `atomicAdd` to safely handle multiple workgroups adding to same variable
-        }
+        barrier();
+
+        // For 1 invocation in each wrokgroup add the workgroup sum to y value in the row to which the workgroup belongs
+        if (gl_LocalInvocationID.x == 0) atomicAdd(y[y_indx],sum);
+        
     }
 }

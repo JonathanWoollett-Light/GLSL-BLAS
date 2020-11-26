@@ -7,7 +7,7 @@
 // + inter-workgroup buffer
 
 // I beleive this is worst (slowest) version of sasum.
-// (although its lack of both subgroup operations and atomics make it more likely to be supported)
+// (although its lack of both subgroup operations adn atomics make it more likely to be supported)
 
 layout(local_size_x = 1024, local_size_y = 1, local_size_z = 1) in;
 

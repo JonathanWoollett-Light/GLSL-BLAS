@@ -10,13 +10,13 @@ on:
 jobs:
   build:
 
-    runs-on: ubuntu-latest
+    runs-on: windows-latest
 
     steps:
     - uses: actions/checkout@v2
     - name: Build
       shell: bash
-      run: for file in glsl/*.comp; do glslc.exe "$file" -o "glsl/$(basename "$file" .comp).spv" --target-env=vulkan1.1; done 
+      run: for file in glsl/*.comp; do /glslc.exe "$file" -o "glsl/$(basename "$file" .comp).spv" --target-env=vulkan1.1; done 
     - name: Validate
       shell: bash
-      run: for file in glsl/*.spv; do spirv-val.exe "$file"; done 
+      run: for file in glsl/*.spv; do /spirv-val.exe "$file"; done 

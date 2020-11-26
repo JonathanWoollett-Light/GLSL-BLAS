@@ -1,8 +1,3 @@
-// ----------------------------------------------------------------
-// MOST OF THESE ARE BAD AND MAY NOT EVEN WORK
-// THEY ARE JUST HERE FORE FUTURE REFERENCE WHEN I CLEAN THEM UP
-// I WOULD NOT RECOMMEND YOU READ THESE
-// ----------------------------------------------------------------
 #version 450
 #extension GL_KHR_shader_subgroup_arithmetic : enable
 #extension GL_EXT_shader_atomic_float: enable

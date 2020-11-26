@@ -12,12 +12,11 @@ layout(binding = 1) buffer Output {
 };
 
 const float neg_inf = -1. / 0.; // practically float::min()
-float g_max = neg_inf; // Global maximum value
 
 const int sumSubGroupSize = 64; // = workgroup size / subgroup size = 1024 / 64
 shared float sdata[sumSubGroupSize]; // subgroup max values
 
-
+//shared float w_max; // Workgroup max value
 
 void main() {
     uint indx = gl_GlobalInvocationID.x;
@@ -40,13 +39,8 @@ void main() {
         
         // For the subgroup with the max workgroup value...
         if (s_max == subgroupMax(s_max)) {
-             // If `g_max=Max(g_max,s_max)`
-            atomicExchange(g_max, max(g_max,s_max)); 
-            // atomicCompSwap(g_max, min(g_max,s_max), s_max);
+            atomicExchange(indx_max, s_max > x[indx_max] ? indx: indx_max);
+            // atomicCompSwap(indx_max, s_max < x[indx_max] ? indx: indx_max, indx);
         }
     }
-    // Wait for all workgroups to check/set `g_max`
-    barrier();
-    // If the value of this invocation is the maximum global value set the global maximum index to the index of this invocation
-    if (val == g_max) indx_max = indx;
 }

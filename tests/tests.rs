@@ -347,7 +347,7 @@ mod tests {
             let mut cpass = encoder.begin_compute_pass();
             cpass.set_pipeline(&compute_pipeline);
             cpass.set_bind_group(0, &bind_group, &[]);
-            cpass.set_push_constants(0u32, &[VECTOR_SIZE as u32]);
+            cpass.set_push_constants(0u32, &[x.len() as u32]);
             cpass.dispatch(workgroups, 1, 1);
         }
         
@@ -371,7 +371,7 @@ mod tests {
             storage_buffer_outputs.unmap();
 
             let start = Instant::now();
-            let cpu_sum:f32 = x.iter().map(|x| x.abs()).sum();
+            let cpu_sum:f32 = x.into_iter().map(|x| x.abs()).sum();
             println!("CPU: {} micros",start.elapsed().as_micros());
 
             println!("gpu sum:\t{}",gpu_sum);

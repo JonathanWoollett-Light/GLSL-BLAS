@@ -20,5 +20,5 @@ jobs:
     - name: Validate GLSL
       shell: bash
       run: for file in glsl/*.spv; do ./spirv-val.exe "$file"; done 
-    - name: Run tests
+    - name: Run tests --release
       run: cargo test

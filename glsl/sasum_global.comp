@@ -27,7 +27,7 @@ layout(binding = 2) buffer Output {
 
 // Length of `x`
 layout(push_constant) uniform PushConsts {
-    int n; // n=len(x)
+    uint n; // n=len(x)
 };
 
 void main() {
@@ -36,7 +36,7 @@ void main() {
     // Applies abs to all inputs
     x[indx] = abs(x[indx]);
     
-    int space = n/2;
+    uint space = n/2;
 
     barrier();
     
@@ -45,12 +45,12 @@ void main() {
         reduceSums[indx] = x[2*indx] + x[2*indx+1];
     }
 
-    const int logLen = int(log2(n));
+    const uint logLen = uint(log2(n));
 
     // The logic here is fairly tricky.
     // I read a paper and some explanation by some nvidia guy when I learned it, I can't find these anymore,
     //  but I made a diagram of an example, pls see 'sasum.png'
-    for(int d=2; d<=logLen; d++) {
+    for(uint d=2; d<=logLen; d++) {
         space = n/(2^d);
         barrier(); // Waits till every invocation has finished this layer to begin next
         if (indx < space) {

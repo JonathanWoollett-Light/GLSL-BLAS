@@ -13,8 +13,7 @@ layout(binding = 0) buffer Buffer0 {
 layout(binding = 1) buffer Buffer1 {
     float y[];
 };
-layout(binding = 2) buffer Output
-{
+layout(binding = 2) buffer Output {
    float total;
 };
 

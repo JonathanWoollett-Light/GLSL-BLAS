@@ -37,7 +37,7 @@ Library |  `GL_EXT_shader_atomic_float` | `GL_KHR_shader_subgroup_arithmetic`
 [Vulkano](https://github.com/vulkano-rs/vulkano) | ❌ | ❌
 
 - `GL_EXT_shader_atomic_float`: Inter-workgroup reduction. To return 1 sum, max, etc. instead of 1 for each workgroup.
-- `GL_KHR_shader_subgroup_arithmetic`: Fast Intra-workgroup reduction. To get sum, max, etc. within a workgroup quickly.
+- `GL_KHR_shader_subgroup_arithmetic`: Fast intra-workgroup reduction. To get sum, max, etc. within a workgroup quickly.
 
 Both can be worked around, but awkwardly.
 

@@ -31,7 +31,14 @@ Sy | Desc
 </td></tr> </table>
 
 ## Support
-Library |  GL_EXT_shader_atomic_float | GL_KHR_shader_subgroup_arithmetic
+Library |  `GL_EXT_shader_atomic_float` | `GL_KHR_shader_subgroup_arithmetic`
 --- | --- | ---
 [WebGPU](https://github.com/gfx-rs/wgpu) | ❌ | ✔️
 [Vulkano](https://github.com/vulkano-rs/vulkano) | ❌ | ❌
+
+- `GL_EXT_shader_atomic_float`: Inter-workgroup reduction. To return 1 sum, max, etc. instead of 1 for each workgroup.
+- `GL_KHR_shader_subgroup_arithmetic`: Fast Intra-workgroup reduction. To get sum, max, etc. within a workgroup quickly.
+
+Both can be worked around, but awkwardly.
+
+Neither are new, code shouldn't need to be made worse due to the lack of support here.

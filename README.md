@@ -43,4 +43,4 @@ Both can be worked around, but awkwardly.
 
 Neither are new, code shouldn't need to be made worse due to the lack of support here.
 
-Floating point atomic operatins in particular are very fundemental compute operations, while lack of support for subgroup operations is dissapointing, lack of support for floating point atomics is egregious for any compute framework.
+Floating point atomic operations in particular are very fundemental compute operations, while lack of support for subgroup operations is dissapointing, lack of support for floating point atomics is egregious for any compute framework.

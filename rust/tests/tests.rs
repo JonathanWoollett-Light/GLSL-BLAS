@@ -8,8 +8,8 @@ mod tests {
     use wgpu::util::DeviceExt;
     use std::{convert::TryInto,time::Instant};
 
-    const MATRIX_SIZE: usize = 4;
-    const VECTOR_SIZE: usize = MATRIX_SIZE * MATRIX_SIZE; 
+    const MATRIX_SIZE: usize = 300;
+    const VECTOR_SIZE: usize = MATRIX_SIZE * MATRIX_SIZE;
 
     const WORKGROUP_SIZE: usize = 1024;
     
@@ -31,7 +31,7 @@ mod tests {
 
         let (bind_group,bind_group_layout) = get_compute_bind_group(&device,&[&storage_buffer_x]);
 
-        let shader = device.create_shader_module(wgpu::include_spirv!("../glsl/sscal.spv"));
+        let shader = device.create_shader_module(wgpu::include_spirv!("../../glsl/sscal.spv"));
 
         let compute_pipeline = get_compute_pipeline(&device,bind_group_layout,shader,&[std::mem::size_of::<f32>()]);
 
@@ -77,6 +77,7 @@ mod tests {
             for (actual,expected) in gpu_vec.iter().zip(cpu_vec.iter()) {
                 assert_eq!(actual,expected);
             }
+            
         }
     }
     #[actix_rt::test]
@@ -102,23 +103,15 @@ mod tests {
             usage: wgpu::BufferUsage::STORAGE | wgpu::BufferUsage::MAP_WRITE | wgpu::BufferUsage::MAP_READ
         });
 
-        println!("-2");
-
         let (bind_group,bind_group_layout) = get_compute_bind_group(&device,&[&storage_buffer_x,&storage_buffer_y]);
 
-        let shader = device.create_shader_module(wgpu::include_spirv!("../glsl/saxpy.spv"));
-
-        println!("-1");
+        let shader = device.create_shader_module(wgpu::include_spirv!("../../glsl/saxpy.spv"));
 
         let compute_pipeline = get_compute_pipeline(&device,bind_group_layout,shader,&[std::mem::size_of::<f32>()]);
 
         let mut encoder = device.create_command_encoder(&wgpu::CommandEncoderDescriptor { label: None });
 
-        println!("-0.5");
-
         let workgroups: u32 = (x.len() as f32 / WORKGROUP_SIZE as f32).ceil() as u32;
-
-        println!("-0.25");
 
         unsafe {
             let mut cpass = encoder.begin_compute_pass();
@@ -127,8 +120,6 @@ mod tests {
             cpass.set_push_constants(0,std::mem::transmute(&[a][..]));
             cpass.dispatch(workgroups, 1, 1); // Number of cells to run, the (x,y,z) size of item being processed
         }
-
-        println!("0");
 
         let command_buffer = encoder.finish();
 
@@ -154,12 +145,13 @@ mod tests {
             let cpu_vec:Vec<f32> = x.into_iter().zip(y.into_iter()).map(|(x,y)| y+x*a).collect();
             println!("CPU: {} micros",start.elapsed().as_micros());
 
-            println!("gpu_vec.len(): {}",gpu_vec.len());
+            println!("gpu_vec.len(): {}",gpu_vec.len()); // Strangely all values can be equal yet `gpu_vec.len()==cpu_vec.len()+1` and I'm not sure why
             println!("cpu_vec.len(): {}",cpu_vec.len());
 
             for (actual,expected) in gpu_vec.iter().zip(cpu_vec.iter()) {
                 assert_eq!(actual,expected);
             }
+            assert!(false);
         }
     }
     #[ignore] // Fails due to lack of wgpu support for subgroups and/or floating point atomics
@@ -193,7 +185,7 @@ mod tests {
 
         let (bind_group,bind_group_layout) = get_compute_bind_group(&device,&[&storage_buffer_x,&storage_buffer_y,&storage_buffer_outputs]);
 
-        let shader = device.create_shader_module(wgpu::include_spirv!("../glsl/sdot.spv"));
+        let shader = device.create_shader_module(wgpu::include_spirv!("../../glsl/sdot.spv"));
 
         let compute_pipeline = get_compute_pipeline(&device,bind_group_layout,shader,&[]);
 
@@ -259,7 +251,7 @@ mod tests {
 
         let (bind_group,bind_group_layout) = get_compute_bind_group(&device,&[&storage_buffer_x,&storage_buffer_outputs]);
 
-        let shader = device.create_shader_module(wgpu::include_spirv!("../glsl/snrm2.spv"));
+        let shader = device.create_shader_module(wgpu::include_spirv!("../../glsl/snrm2.spv"));
 
         let compute_pipeline = get_compute_pipeline(&device,bind_group_layout,shader,&[]);
 
@@ -335,7 +327,7 @@ mod tests {
 
         let (bind_group,bind_group_layout) = get_compute_bind_group(&device,&[&storage_buffer_x,&storage_buffer_internal,&storage_buffer_outputs]);
 
-        let shader = device.create_shader_module(wgpu::include_spirv!("../glsl/sasum_global.spv"));
+        let shader = device.create_shader_module(wgpu::include_spirv!("../../glsl/sasum_global.spv"));
 
         // Get compute pipeline with 1 u32/uint push constant
         let compute_pipeline = get_compute_pipeline(&device,bind_group_layout,shader,&[std::mem::size_of::<u32>()]);
@@ -405,7 +397,7 @@ mod tests {
 
         let (bind_group,bind_group_layout) = get_compute_bind_group(&device,&[&storage_buffer_x,&storage_buffer_outputs]);
 
-        let shader = device.create_shader_module(wgpu::include_spirv!("../glsl/sasum_workgroup.spv"));
+        let shader = device.create_shader_module(wgpu::include_spirv!("../../glsl/sasum_workgroup.spv"));
 
         let compute_pipeline = get_compute_pipeline(&device,bind_group_layout,shader,&[]);
 
@@ -473,7 +465,7 @@ mod tests {
 
         let (bind_group,bind_group_layout) = get_compute_bind_group(&device,&[&storage_buffer_x,&storage_buffer_outputs]);
 
-        let shader = device.create_shader_module(wgpu::include_spirv!("../glsl/sasum_subgroup.spv"));
+        let shader = device.create_shader_module(wgpu::include_spirv!("../../glsl/sasum_subgroup.spv"));
 
         let compute_pipeline = get_compute_pipeline(&device,bind_group_layout,shader,&[]);
 
@@ -541,7 +533,7 @@ mod tests {
 
         let (bind_group,bind_group_layout) = get_compute_bind_group(&device,&[&storage_buffer_x,&storage_buffer_outputs]);
 
-        let shader = device.create_shader_module(wgpu::include_spirv!("../glsl/sasum_subgroup.spv"));
+        let shader = device.create_shader_module(wgpu::include_spirv!("../../glsl/sasum_subgroup.spv"));
 
         let compute_pipeline = get_compute_pipeline(&device,bind_group_layout,shader,&[]);
 
@@ -704,7 +696,7 @@ mod tests {
             entries: &bindgroup_entries,
         });
 
-        let shader = device.create_shader_module(wgpu::include_spirv!("../glsl/sgemv.spv"));
+        let shader = device.create_shader_module(wgpu::include_spirv!("../../glsl/sgemv.spv"));
 
         let compute_pipeline = get_compute_pipeline(&device,bind_group_layout,shader,&[]);
 

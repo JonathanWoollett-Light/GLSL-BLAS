@@ -19,6 +19,4 @@ jobs:
       run: for file in glsl/*.comp; do ./glslc.exe "$file" -o "glsl/$(basename "$file" .comp).spv" --target-env=vulkan1.1; done 
     - name: Validate GLSL
       shell: bash
-      run: for file in glsl/*.spv; do ./spirv-val.exe "$file"; done 
-    - name: Run tests
-      run: cargo test
+      run: for file in glsl/*.spv; do ./spirv-val.exe "$file"; done

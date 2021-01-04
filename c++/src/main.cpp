@@ -78,6 +78,21 @@ public:
         int const* dims, // [x,y,z],
         int const* dimLengths // [local_size_x, local_size_y, local_size_z]
     ) {
+        std::cout << "in:" << std::endl;
+        for (int i = 0; i < numBuffers; ++i) {
+            std::cout << '\t';
+            for (int j = 0; j < bufferSizes[i]; ++j) {
+                std::cout << bufferData[i][j] << ' ';
+            }
+            std::cout << std::endl;
+        }
+        std::cout << '\t' << '[' << ' ';
+        for (int i = 0; i < numPushConstants; ++i) {
+            std::cout << pushConstants[i] << ' ';
+        }
+        std::cout << ']';
+        std::cout << std::endl << std::endl;
+
         // Initialize vulkan:
         createInstance(enabledLayers,instance);
 
@@ -384,14 +399,6 @@ public:
         uint32_t numBuffers,
         uint32_t const* bufferSizes
     ) {
-        for (int i = 0; i < numBuffers; ++i) {
-            for (int j = 0; j < bufferSizes[i]; ++j) {
-                std::cout << bufferData[i][j] << ' ';
-            }
-            std::cout << std::endl;
-        }
-        std::cout << std::endl;
-
         for (uint32_t i = 0; i < numBuffers; ++i) {
             void* data = nullptr;
             vkMapMemory(device, bufferMemories[i], 0, VK_WHOLE_SIZE, 0, &data);
@@ -655,7 +662,7 @@ public:
         // Sets push constants
         vkCmdPushConstants(*commandBuffer, pipelineLayout,VK_SHADER_STAGE_COMPUTE_BIT,0, numPushConstants*sizeof(float), pushConstants);
 
-        std::cout << '(' <<
+        std::cout << "workgroups: " << '(' <<
             (uint32_t)ceil(dims[0] / (float)dimLengths[0]) << ',' <<
             (uint32_t)ceil(dims[1] / (float)dimLengths[1]) << ',' <<
             (uint32_t)ceil(dims[2] / (float)dimLengths[2]) << ')' << 
@@ -735,6 +742,8 @@ public:
         void* data = nullptr;
         vkMapMemory(device, bufferMemory, 0, VK_WHOLE_SIZE, 0, &data);
         float* actualData = (float*)data;
+        std::cout << "out:" << std::endl;
+        std::cout << '\t';
         for (int i = 0; i < size; ++i) {
             std::cout << actualData[i] << ' ';
         }
@@ -762,11 +771,12 @@ int main() {
     ComputeApplication app;
 
     try {
+        uint32_t size = 10;
         float** data = new float*[1];
-        data[0] = new float[10]{ 1,2,3,4,5,5,4,3,2,1 };
+        data[0] = new float[size]{ 1,2,3,4,5,5,4,3,2,1 };
         
         app.run(
-            new uint32_t[1]{ 10 }, // Buffer sizes
+            new uint32_t[1]{ size }, // Buffer sizes
             1, //  Number of buffers
             data, // Buffer data
             new float[1]{ 7 }, // Push constants

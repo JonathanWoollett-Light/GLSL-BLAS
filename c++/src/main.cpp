@@ -9,6 +9,9 @@
 #include <stdexcept>
 #include <cmath>
 
+#include <windows.h>
+#include <cstdlib>
+
 const int MATRIX_SIZE = 300;
 const int VECTOR_SIZE = MATRIX_SIZE * MATRIX_SIZE;
 
@@ -60,6 +63,7 @@ private:
 
 public:
     void run(
+        char* shaderFile,
         uint32_t const * bufferSizes,
         uint32_t numBuffers,
         float**& bufferData,
@@ -107,7 +111,7 @@ public:
         // Creates compute pipeline
         createComputePipeline(
             device,
-            "../glsl/sscal.spv",
+            shaderFile,
             &computeShaderModule,
             &descriptorSetLayout,
             &pipelineLayout,
@@ -544,24 +548,15 @@ public:
         VkShaderModuleCreateInfo createInfo = {};
         {
             uint32_t filelength;
-            //uint32_t* code = readFile(filelength, "shaders/comp.spv");
             createInfo.sType = VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO;
             createInfo.pCode = readFile(filelength, shaderFile);
             createInfo.codeSize = filelength;
-            //delete[] code;
         }
 
         VK_CHECK_RESULT(vkCreateShaderModule(device, &createInfo, NULL, computeShaderModule));
 
         // A compute pipeline is very simple compared to a graphics pipeline.
         // It only consists of a single stage with a compute shader.
-
-        VkPushConstantRange push_constant;
-        {
-            push_constant.stageFlags = VK_SHADER_STAGE_COMPUTE_BIT;
-            push_constant.offset = 0;
-            push_constant.size = numPushConstants * sizeof(float);
-        }
 
         // The pipeline layout allows the pipeline to access descriptor sets. 
         // So we just specify the descriptor set layout we created earlier.
@@ -570,8 +565,20 @@ public:
             pipelineLayoutCreateInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
             pipelineLayoutCreateInfo.setLayoutCount = 1; // 1 shader
             pipelineLayoutCreateInfo.pSetLayouts = descriptorSetLayout; // Descriptor set
-            pipelineLayoutCreateInfo.pushConstantRangeCount = 1;
-            pipelineLayoutCreateInfo.pPushConstantRanges = &push_constant;
+            
+
+            if (numPushConstants != 0) {
+                VkPushConstantRange push_constant;
+                {
+                    push_constant.stageFlags = VK_SHADER_STAGE_COMPUTE_BIT;
+                    push_constant.offset = 0;
+                    push_constant.size = numPushConstants * sizeof(float);
+                }
+
+                pipelineLayoutCreateInfo.pushConstantRangeCount = 1;
+                pipelineLayoutCreateInfo.pPushConstantRanges = &push_constant;
+            }
+            
         }
         
         VK_CHECK_RESULT(vkCreatePipelineLayout(device, &pipelineLayoutCreateInfo, NULL, pipelineLayout));
@@ -650,7 +657,10 @@ public:
         vkCmdBindDescriptorSets(*commandBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, pipelineLayout, 0, 1, &descriptorSet, 0, NULL);
         
         // Sets push constants
-        vkCmdPushConstants(*commandBuffer, pipelineLayout,VK_SHADER_STAGE_COMPUTE_BIT,0, numPushConstants*sizeof(float), pushConstants);
+        if (numPushConstants != 0) {
+            vkCmdPushConstants(*commandBuffer, pipelineLayout, VK_SHADER_STAGE_COMPUTE_BIT, 0, numPushConstants * sizeof(float), pushConstants);
+        }
+        
 
         std::cout << "workgroups: " << '(' <<
             (uint32_t)ceil(dims[0] / (float)dimLengths[0]) << ',' <<
@@ -690,7 +700,7 @@ public:
         VkFenceCreateInfo fenceCreateInfo = {};
         {
             fenceCreateInfo.sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO;
-            fenceCreateInfo.flags = 0; // TODO Add explanation of this
+            // fenceCreateInfo.flags = 0; // this is set by default // https://www.khronos.org/registry/vulkan/specs/1.2-extensions/man/html/VkFenceCreateFlagBits.html
         }
         VK_CHECK_RESULT(vkCreateFence(device, &fenceCreateInfo, NULL, &fence));
 
@@ -703,26 +713,7 @@ public:
         // Destructs fence
         vkDestroyFence(device, fence, NULL);
     }
-    /*
-    VkInstance instance;
-    VkPhysicalDevice physicalDevice;
-    uint32_t queueFamilyIndex;
-    VkDevice device;
-    VkQueue queue;
 
-    VkBuffer* buffers;
-
-    VkDescriptorSetLayout descriptorSetLayout;
-    VkDescriptorPool descriptorPool;
-
-    VkShaderModule computeShaderModule;
-
-    VkPipelineLayout pipelineLayout;
-    VkPipeline pipeline;
-
-    VkCommandPool commandPool;
-    VkCommandBuffer commandBuffer;
-    */
 
     void printOutput(
         VkDevice& device,
@@ -758,14 +749,15 @@ public:
 };
 
 int main() {
-    ComputeApplication app;
-
+    // +push_constant to all values in buffer
+    ComputeApplication app1;
     try {
         uint32_t size = 10;
         float** data = new float*[1];
         data[0] = new float[size]{ 1,2,3,4,5,5,4,3,2,1 };
         
-        app.run(
+        app1.run(
+            "../glsl/sscal.spv",
             new uint32_t[1]{ size }, // Buffer sizes
             1, //  Number of buffers
             data, // Buffer data
@@ -780,5 +772,28 @@ int main() {
         return EXIT_FAILURE;
     }
     
+    // +1 to all values in buffer
+    ComputeApplication app2;
+    try {
+        uint32_t size = 10;
+        float** data = new float* [1];
+        data[0] = new float[size] { 1, 2, 3, 4, 5, 5, 4, 3, 2, 1 };
+
+        app2.run(
+            "../glsl/plus.spv",
+            new uint32_t[1]{ size }, // Buffer sizes
+            1, //  Number of buffers
+            data, // Buffer data
+            new float[0]{ }, // Push constants
+            0, // Number of push constants
+            new int[3]{ 10,1,1 }, // Invocations
+            new int[3]{ 1024,1,1 } // Workgroup sizes
+        );
+    }
+    catch (const std::runtime_error& e) {
+        printf("%s\n", e.what());
+        return EXIT_FAILURE;
+    }
+
     return EXIT_SUCCESS;
 }

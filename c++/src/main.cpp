@@ -103,7 +103,7 @@ public:
         createDescriptorSetLayout(device, numBuffers, &descriptorSetLayout);
 
         // Create descriptor set
-        createDescriptorSet(device,numBuffers, &descriptorPool,&descriptorSetLayout,buffers, bufferSizes);
+        createDescriptorSet(device,numBuffers, &descriptorPool,&descriptorSetLayout,buffers);
 
         // Fills buffers
         fillBuffers(device, bufferData, bufferMemories, numBuffers, bufferSizes);
@@ -351,7 +351,7 @@ public:
         VkBufferCreateInfo bufferCreateInfo = {};
         {
             bufferCreateInfo.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
-            bufferCreateInfo.size = size; // buffer size in bytes. 
+            bufferCreateInfo.size = sizeof(float)*size; // buffer size in bytes. 
             bufferCreateInfo.usage = VK_BUFFER_USAGE_STORAGE_BUFFER_BIT; // buffer is used as a storage buffer.
             bufferCreateInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE; // buffer is exclusive to a single queue family at a time. 
         }
@@ -434,8 +434,7 @@ public:
         uint32_t storageBuffers,
         VkDescriptorPool* descriptorPool,
         VkDescriptorSetLayout* descriptorSetLayout,
-        VkBuffer* buffers,
-        uint32_t const* bufferSizes
+        VkBuffer* buffers
     ) {
         // Creates descriptor pool
         // A pool implements a number of descriptors of each type 
@@ -484,7 +483,7 @@ public:
             for (uint32_t i = 0; i < storageBuffers; ++i) {
                 bindings[i].buffer = buffers[i];
                 bindings[i].offset = 0;
-                bindings[i].range = bufferSizes[i];
+                bindings[i].range = VK_WHOLE_SIZE; //sizeof(float)*bufferSizes[i];
             }
 
             writeDescriptorSet.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
@@ -749,6 +748,7 @@ public:
 };
 
 int main() {
+
     // +push_constant to all values in buffer
     ComputeApplication app1;
     try {
@@ -794,6 +794,6 @@ int main() {
         printf("%s\n", e.what());
         return EXIT_FAILURE;
     }
-
+    
     return EXIT_SUCCESS;
 }

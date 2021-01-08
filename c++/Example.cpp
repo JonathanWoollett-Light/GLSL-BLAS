@@ -36,7 +36,8 @@ ComputeApp::ComputeApp(
     float* pushConstants,
     uint32_t numPushConstants,
     int const* dims, // [x,y,z],
-    int const* dimLengths // [local_size_x, local_size_y, local_size_z]
+    int const* dimLengths, // [local_size_x, local_size_y, local_size_z]
+    bool requiresAtomic
 ) {
     // std::cout << "in:" << std::endl;
     // for (uint32_t i = 0; i < numBuffers; ++i) {
@@ -56,7 +57,7 @@ ComputeApp::ComputeApp(
     this->numBuffers = numBuffers;
 
     // Initialize vulkan:
-    createInstance(enabledLayers,instance);
+    createInstance(enabledLayers,instance,requiresAtomic);
 
     // Gets physical device
     getPhysicalDevice(instance, physicalDevice);
@@ -107,7 +108,7 @@ ComputeApp::ComputeApp(
 }
 
 // Gets Vulkan instance
-void ComputeApp::createInstance(std::vector<char const*> &enabledLayers, VkInstance& instance) {
+void ComputeApp::createInstance(std::vector<char const*> &enabledLayers, VkInstance& instance, bool requiresAtomic) {
     std::vector<char const*> enabledExtensions;
 
     if (enableValidationLayers.has_value()) {
@@ -152,12 +153,15 @@ void ComputeApp::createInstance(std::vector<char const*> &enabledLayers, VkInsta
         if (!debug_report) {
             throw std::runtime_error("Extension VK_EXT_DEBUG_REPORT_EXTENSION_NAME not supported\n");
         }
-        if (!atomic_float) {
-            throw std::runtime_error("Extension VK_EXT_SHADER_ATOMIC_FLOAT_EXTENSION_NAME not supported\n");
+        if (requiresAtomic) {
+            if (!atomic_float) {
+                throw std::runtime_error("Extension VK_EXT_SHADER_ATOMIC_FLOAT_EXTENSION_NAME not supported\n");
+            }
+            enabledExtensions.push_back(VK_EXT_SHADER_ATOMIC_FLOAT_EXTENSION_NAME);
         }
         // Else, push to layers and continue
         enabledExtensions.push_back(VK_EXT_DEBUG_REPORT_EXTENSION_NAME);
-        enabledExtensions.push_back(VK_EXT_SHADER_ATOMIC_FLOAT_EXTENSION_NAME);
+        
     }
 
     VkInstanceCreateInfo createInfo = {};

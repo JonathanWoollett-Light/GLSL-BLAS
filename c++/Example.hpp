@@ -78,7 +78,8 @@ class ComputeApp {
             float* pushConstants,
             uint32_t numPushConstants,
             int const* dims, // [x,y,z],
-            int const* dimLengths // [local_size_x, local_size_y, local_size_z]
+            int const* dimLengths, // [local_size_x, local_size_y, local_size_z]
+            bool requiresAtomic
         );
         ~ComputeApp();
     // --------------------------------------------------
@@ -86,7 +87,7 @@ class ComputeApp {
     // --------------------------------------------------
     private:
         // Gets Vulkan instance
-        void createInstance(std::vector<char const*> &enabledLayers, VkInstance& instance);
+        void createInstance(std::vector<char const*> &enabledLayers, VkInstance& instance, bool requiresAtomic);
         
         // Gets physical device
         void getPhysicalDevice(VkInstance& instance, VkPhysicalDevice& physicalDevice);

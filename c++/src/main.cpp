@@ -492,25 +492,27 @@ public:
     // Read file into array of bytes, and cast to uint32_t*, then return.
     // The data has been padded, so that it fits into an array uint32_t.
     uint32_t* readFile(uint32_t& length, const char* filename) {
-
+        // Open file
         FILE* fp = fopen(filename, "rb");
-        if (fp == NULL) {
-            printf("Could not find or open file: %s\n", filename);
+        if (fp == nullptr) {
+            throw std::runtime_error("Could not open shader");
         }
 
-        // get file size.
+        // Get file size.
         fseek(fp, 0, SEEK_END);
         long filesize = ftell(fp);
+        // Get file size ceiled to multiple of 4 bytes
         fseek(fp, 0, SEEK_SET);
-
         long filesizepadded = long(ceil(filesize / 4.0)) * 4;
 
-        // read file contents.
+        // Read file
         char *str = new char[filesizepadded];
-        fread(str, filesize, sizeof(char), fp);
+        fread(str, filesizepadded, sizeof(char), fp);
+
+        // Close file
         fclose(fp);
 
-        // data padding. 
+        // zeros last 0 to 3 bytes
         for (int i = filesize; i < filesizepadded; i++) {
             str[i] = 0;
         }

@@ -217,7 +217,7 @@ public:
         // Gets number of physical devices
         uint32_t deviceCount;
         vkEnumeratePhysicalDevices(instance, &deviceCount, nullptr);
-        // presumes `deviceCount > 0`
+        assert(deviceCount != 0);
 
         // Gets physical devices
         std::vector<VkPhysicalDevice> devices(deviceCount);

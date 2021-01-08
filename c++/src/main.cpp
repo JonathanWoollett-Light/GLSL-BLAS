@@ -74,15 +74,15 @@ public:
         int const* dimLengths // [local_size_x, local_size_y, local_size_z]
     ) {
         std::cout << "in:" << std::endl;
-        for (int i = 0; i < numBuffers; ++i) {
+        for (uint32_t i = 0; i < numBuffers; ++i) {
             std::cout << '\t';
-            for (int j = 0; j < bufferSizes[i]; ++j) {
+            for (uint32_t j = 0; j < bufferSizes[i]; ++j) {
                 std::cout << bufferData[i][j] << ' ';
             }
             std::cout << std::endl;
         }
         std::cout << '\t' << '[' << ' ';
-        for (int i = 0; i < numPushConstants; ++i) {
+        for (uint32_t i = 0; i < numPushConstants; ++i) {
             std::cout << pushConstants[i] << ' ';
         }
         std::cout << ']';
@@ -213,9 +213,9 @@ public:
             }
             createInfo.sType = VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO;
             createInfo.pApplicationInfo = &applicationInfo;
-            createInfo.enabledLayerCount = enabledLayers.size();
+            createInfo.enabledLayerCount = static_cast<uint32_t>(enabledLayers.size());
             createInfo.ppEnabledLayerNames = enabledLayers.data();
-            createInfo.enabledExtensionCount = enabledExtensions.size();
+            createInfo.enabledExtensionCount = static_cast<uint32_t>(enabledExtensions.size());
             createInfo.ppEnabledExtensionNames = enabledExtensions.data();
         }
     
@@ -713,7 +713,7 @@ public:
         float* actualData = (float*)data;
         std::cout << "out:" << std::endl;
         std::cout << '\t';
-        for (int i = 0; i < size; ++i) {
+        for (uint32_t i = 0; i < size; ++i) {
             std::cout << actualData[i] << ' ';
         }
         std::cout << std::endl;

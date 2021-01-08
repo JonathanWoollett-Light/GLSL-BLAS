@@ -61,6 +61,8 @@ class ComputeApp {
 
         VkCommandPool commandPool;
         VkCommandBuffer commandBuffer;
+
+        uint32_t numBuffers; // necessary for destruction
     // --------------------------------------------------
     // Public methods
     // --------------------------------------------------

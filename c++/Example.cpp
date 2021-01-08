@@ -53,6 +53,8 @@ ComputeApp::ComputeApp(
     // std::cout << ']';
     // std::cout << std::endl << std::endl;
 
+    this->numBuffers = numBuffers;
+
     // Initialize vulkan:
     createInstance(enabledLayers,instance);
 
@@ -602,11 +604,11 @@ void ComputeApp::createCommandBuffer(
         vkCmdPushConstants(*commandBuffer, pipelineLayout, VK_SHADER_STAGE_COMPUTE_BIT, 0, numPushConstants * sizeof(float), pushConstants);
     }
     
-    std::cout << '(' <<
-        (uint32_t)ceil(dims[0] / (float)dimLengths[0]) << ',' <<
-        (uint32_t)ceil(dims[1] / (float)dimLengths[1]) << ',' <<
-        (uint32_t)ceil(dims[2] / (float)dimLengths[2]) << ')' << 
-        std::endl << std::endl;
+    // std::cout << '(' <<
+    //     (uint32_t)ceil(dims[0] / (float)dimLengths[0]) << ',' <<
+    //     (uint32_t)ceil(dims[1] / (float)dimLengths[1]) << ',' <<
+    //     (uint32_t)ceil(dims[2] / (float)dimLengths[2]) << ')' << 
+    //     std::endl << std::endl;
 
     // Sets invocations
     vkCmdDispatch(
@@ -656,8 +658,10 @@ void ComputeApp::runCommandBuffer(
 
 ComputeApp::~ComputeApp() {
     // TODO These top 2 probably wrong
-    vkFreeMemory(device, *bufferMemories, nullptr);
-    vkDestroyBuffer(device, *buffers, nullptr);
+    for(uint32_t i=0;i<this->numBuffers;++i) {
+        vkFreeMemory(device, bufferMemories[i], nullptr);
+        vkDestroyBuffer(device, buffers[i], nullptr);
+    }
     vkDestroyShaderModule(device, computeShaderModule, nullptr);
     vkDestroyDescriptorPool(device, descriptorPool, nullptr);
     vkDestroyDescriptorSetLayout(device, descriptorSetLayout, nullptr);

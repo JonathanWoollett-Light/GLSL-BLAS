@@ -239,20 +239,22 @@ public:
         vkGetPhysicalDeviceQueueFamilyProperties(physicalDevice, &queueFamilyCount, queueFamilies.data());
 
         // Picks 1st queue family which supports compute
-        /*auto itr = std::find_if(queueFamilies.begin(), queueFamilies.end(), [](VkQueueFamilyProperties& props) {
+        auto itr = std::find_if(queueFamilies.begin(), queueFamilies.end(), [](VkQueueFamilyProperties& props) {
             return (props.queueFlags & VK_QUEUE_COMPUTE_BIT);
         });
         if (itr == queueFamilies.end()) {
             throw std::runtime_error("No compute queue family");
-        }*/
+        }
+        return std::distance(queueFamilies.begin(), itr);
 
+        /*
         for (uint32_t i = 0; i < queueFamilies.size(); ++i) {
             // If queue family supports compute
             if (queueFamilies[i].queueFlags & VK_QUEUE_COMPUTE_BIT) {
                 return i;
             }
         }
-        throw std::runtime_error("No compute queue family");
+        throw std::runtime_error("No compute queue family");*/
     }
     
     // Gets logical device
@@ -390,7 +392,6 @@ public:
         uint32_t numBuffers,
         VkDescriptorSetLayout* descriptorSetLayout
     ) {
-        
         // Descriptor set layout options
         VkDescriptorSetLayoutCreateInfo descriptorSetLayoutCreateInfo = {};
         {
@@ -480,7 +481,6 @@ public:
             writeDescriptorSet.pBufferInfo = bindings;
         }
         
-
         // perform the update of the descriptor set.
         vkUpdateDescriptorSets(device, 1, &writeDescriptorSet, 0, nullptr);
     }

@@ -38,20 +38,20 @@ ComputeApp::ComputeApp(
     int const* dims, // [x,y,z],
     int const* dimLengths // [local_size_x, local_size_y, local_size_z]
 ) {
-    std::cout << "in:" << std::endl;
-    for (uint32_t i = 0; i < numBuffers; ++i) {
-        std::cout << '\t';
-        for (uint32_t j = 0; j < bufferSizes[i]; ++j) {
-            std::cout << bufferData[i][j] << ' ';
-        }
-        std::cout << std::endl;
-    }
-    std::cout << '\t' << '[' << ' ';
-    for (uint32_t i = 0; i < numPushConstants; ++i) {
-        std::cout << pushConstants[i] << ' ';
-    }
-    std::cout << ']';
-    std::cout << std::endl << std::endl;
+    // std::cout << "in:" << std::endl;
+    // for (uint32_t i = 0; i < numBuffers; ++i) {
+    //     std::cout << '\t';
+    //     for (uint32_t j = 0; j < bufferSizes[i]; ++j) {
+    //         std::cout << bufferData[i][j] << ' ';
+    //     }
+    //     std::cout << std::endl;
+    // }
+    // std::cout << '\t' << '[' << ' ';
+    // for (uint32_t i = 0; i < numPushConstants; ++i) {
+    //     std::cout << pushConstants[i] << ' ';
+    // }
+    // std::cout << ']';
+    // std::cout << std::endl << std::endl;
 
     // Initialize vulkan:
     createInstance(enabledLayers,instance);

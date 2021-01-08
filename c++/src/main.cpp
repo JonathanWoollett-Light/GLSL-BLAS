@@ -246,15 +246,6 @@ public:
             throw std::runtime_error("No compute queue family");
         }
         return std::distance(queueFamilies.begin(), itr);
-
-        /*
-        for (uint32_t i = 0; i < queueFamilies.size(); ++i) {
-            // If queue family supports compute
-            if (queueFamilies[i].queueFlags & VK_QUEUE_COMPUTE_BIT) {
-                return i;
-            }
-        }
-        throw std::runtime_error("No compute queue family");*/
     }
     
     // Gets logical device

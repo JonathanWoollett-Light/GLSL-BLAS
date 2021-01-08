@@ -36,7 +36,7 @@ class ComputeApplication {
 private:
     
     // Order of usage
-    std::vector<const char*> enabledLayers;
+    std::vector<char const*> enabledLayers;
     VkInstance instance;
     VkPhysicalDevice physicalDevice;
     uint32_t queueFamilyIndex;
@@ -49,6 +49,8 @@ private:
     VkDescriptorSetLayout descriptorSetLayout;
     VkDescriptorPool descriptorPool;
 
+    VkDescriptorSet descriptorSet;
+
     VkShaderModule computeShaderModule;
 
     VkPipelineLayout pipelineLayout;
@@ -56,11 +58,6 @@ private:
 
     VkCommandPool commandPool;
     VkCommandBuffer commandBuffer;
-
-    // Newly unused
-    // ------------------
-    VkDescriptorSet descriptorSet;
-
 public:
     void run(
         char* shaderFile,
@@ -159,7 +156,7 @@ public:
      }
 
     // Initiates Vulkan instance
-    void createInstance(std::vector<const char*> &enabledLayers, VkInstance& instance) {
+    void createInstance(std::vector<char const*> &enabledLayers, VkInstance& instance) {
         std::vector<const char*> enabledExtensions;
 
         if (enableValidationLayers) {

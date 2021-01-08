@@ -132,6 +132,8 @@ void ComputeApp::createInstance(std::vector<char const*> &enabledLayers, VkInsta
         
         // We need to enable the extension named VK_EXT_DEBUG_REPORT_EXTENSION_NAME,
         //  to print the warnings emitted by the validation layer.
+        // We need to enable the extension named VK_EXT_SHADER_ATOMIC_FLOAT_EXTENSION_NAME,
+        //  so we can use floating point atomic operations in shaders.
 
         // Gets number of supported extensions
         uint32_t extensionCount;
@@ -139,16 +141,23 @@ void ComputeApp::createInstance(std::vector<char const*> &enabledLayers, VkInsta
         // Gets all supported extensions
         std::vector<VkExtensionProperties> extensionProperties(extensionCount);
         vkEnumerateInstanceExtensionProperties(nullptr, &extensionCount, extensionProperties.data());
-        // Check 'VK_EXT_DEBUG_REPORT_EXTENSION_NAME' is among supported layers
-        auto ext_itr = std::find_if(extensionProperties.begin(), extensionProperties.end(), [](VkExtensionProperties& prop) {
-            return (strcmp(VK_EXT_DEBUG_REPORT_EXTENSION_NAME, prop.extensionName) == 0);
-        });
-        // If not, throw error
-        if (ext_itr == extensionProperties.end()) {
+
+        bool debug_report = false;
+        bool atomic_float = false;
+        for(VkExtensionProperties& prop: extensionProperties) {
+            if (strcmp(VK_EXT_DEBUG_REPORT_EXTENSION_NAME, prop.extensionName) == 0) { debug_report=true; }
+            if (strcmp(VK_EXT_SHADER_ATOMIC_FLOAT_EXTENSION_NAME, prop.extensionName) == 0) { atomic_float=true; }
+        }
+
+        if (!debug_report) {
             throw std::runtime_error("Extension VK_EXT_DEBUG_REPORT_EXTENSION_NAME not supported\n");
+        }
+        if (!atomic_float) {
+            throw std::runtime_error("Extension VK_EXT_SHADER_ATOMIC_FLOAT_EXTENSION_NAME not supported\n");
         }
         // Else, push to layers and continue
         enabledExtensions.push_back(VK_EXT_DEBUG_REPORT_EXTENSION_NAME);
+        enabledExtensions.push_back(VK_EXT_SHADER_ATOMIC_FLOAT_EXTENSION_NAME);
     }
 
     VkInstanceCreateInfo createInfo = {};
@@ -156,7 +165,7 @@ void ComputeApp::createInstance(std::vector<char const*> &enabledLayers, VkInsta
         VkApplicationInfo applicationInfo = {};
         {
             applicationInfo.sType = VK_STRUCTURE_TYPE_APPLICATION_INFO;
-            applicationInfo.apiVersion = VK_API_VERSION_1_0;
+            applicationInfo.apiVersion = VK_API_VERSION_1_1;
         }
         createInfo.sType = VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO;
         createInfo.pApplicationInfo = &applicationInfo;
@@ -187,6 +196,16 @@ void ComputeApp::getPhysicalDevice(VkInstance& instance, VkPhysicalDevice& physi
     // Gets physical devices
     std::vector<VkPhysicalDevice> devices(deviceCount);
     vkEnumeratePhysicalDevices(instance, &deviceCount, devices.data());
+
+    // Checks subgroup support
+    VkPhysicalDeviceSubgroupProperties subgroupProperties = {};
+    subgroupProperties.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SUBGROUP_PROPERTIES;
+    VkPhysicalDeviceProperties2 physicalDeviceProperties;
+    physicalDeviceProperties.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PROPERTIES_2;
+    physicalDeviceProperties.pNext = &subgroupProperties;
+    if (VK_SUBGROUP_FEATURE_ARITHMETIC_BIT & subgroupProperties.supportedOperations == 0) {
+        throw std::runtime_error("VK_SUBGROUP_FEATURE_ARITHMETIC_BIT not supported");
+    }
 
     // Picks 1st
     physicalDevice = devices[0];

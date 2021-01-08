@@ -138,9 +138,6 @@ public:
         runCommandBuffer(&commandBuffer,device,queue);
 
         printOutput(device, bufferMemories[0], bufferSizes[0]);
-
-        // Clean up all vulkan resources.
-        cleanup();
     }
 
     // Initiates Vulkan instance
@@ -636,7 +633,6 @@ public:
             vkCmdPushConstants(*commandBuffer, pipelineLayout, VK_SHADER_STAGE_COMPUTE_BIT, 0, numPushConstants * sizeof(float), pushConstants);
         }
         
-
         std::cout << "workgroups: " << '(' <<
             (uint32_t)ceil(dims[0] / (float)dimLengths[0]) << ',' <<
             (uint32_t)ceil(dims[1] / (float)dimLengths[1]) << ',' <<
@@ -708,7 +704,7 @@ public:
     }
 
     // Cleans up - Destructs everything
-    void cleanup() {
+    ~ComputeApplication() {
         // TODO These top 2 probably wrong
         vkFreeMemory(device, *bufferMemories, nullptr);
         vkDestroyBuffer(device, *buffers, nullptr);

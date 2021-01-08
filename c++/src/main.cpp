@@ -239,15 +239,22 @@ public:
         vkGetPhysicalDeviceQueueFamilyProperties(physicalDevice, &queueFamilyCount, queueFamilies.data());
 
         // Picks 1st queue family which supports compute
+        /*auto itr = std::find_if(queueFamilies.begin(), queueFamilies.end(), [](VkQueueFamilyProperties& props) {
+            return (props.queueFlags & VK_QUEUE_COMPUTE_BIT);
+        });
+        if (itr == queueFamilies.end()) {
+            throw std::runtime_error("No compute queue family");
+        }*/
+
         for (uint32_t i = 0; i < queueFamilies.size(); ++i) {
-            VkQueueFamilyProperties props = queueFamilies[i];
             // If queue family supports compute
-            if (props.queueFlags & VK_QUEUE_COMPUTE_BIT) {
+            if (queueFamilies[i].queueFlags & VK_QUEUE_COMPUTE_BIT) {
                 return i;
             }
         }
         throw std::runtime_error("No compute queue family");
     }
+    
     // Gets logical device
     void createDevice(
         VkPhysicalDevice& physicalDevice,
@@ -300,20 +307,6 @@ public:
         return -1;
     }
 
-    // Creates buffers
-    void createBuffers(
-        VkDevice& device,
-        uint32_t const* bufferSizes,
-        uint32_t numBuffers,
-        VkBuffer*& buffers,
-        VkDeviceMemory*& bufferMemories
-    ) {
-        buffers = new VkBuffer[numBuffers];
-        bufferMemories = new VkDeviceMemory[numBuffers];
-        for (uint32_t i = 0; i < numBuffers; ++i) {
-            createBuffer(device, bufferSizes[i], &buffers[i], &bufferMemories[i]);
-        }
-    }
     // Creates buffer
     void createBuffer(
         VkDevice& device,
@@ -325,7 +318,7 @@ public:
         VkBufferCreateInfo bufferCreateInfo = {};
         {
             bufferCreateInfo.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
-            bufferCreateInfo.size = sizeof(float)*size; // buffer size in bytes. 
+            bufferCreateInfo.size = sizeof(float) * size; // buffer size in bytes. 
             bufferCreateInfo.usage = VK_BUFFER_USAGE_STORAGE_BUFFER_BIT; // buffer is used as a storage buffer.
             bufferCreateInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE; // buffer is exclusive to a single queue family at a time. 
         }
@@ -333,11 +326,11 @@ public:
         VK_CHECK_RESULT(vkCreateBuffer(device, &bufferCreateInfo, nullptr, buffer)); // Constructs buffer
 
         // Buffers do not allocate memory upon construction, we must do it manually
-        
+
         // Gets buffer memory size and offset
         VkMemoryRequirements memoryRequirements;
         vkGetBufferMemoryRequirements(device, *buffer, &memoryRequirements);
-        
+
         // Sets buffer options
         VkMemoryAllocateInfo allocateInfo = {};
         allocateInfo.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
@@ -358,6 +351,22 @@ public:
         // Binds buffer to allocated memory
         VK_CHECK_RESULT(vkBindBufferMemory(device, *buffer, *bufferMemory, 0));
     }
+
+    // Creates buffers
+    void createBuffers(
+        VkDevice& device,
+        uint32_t const* bufferSizes,
+        uint32_t numBuffers,
+        VkBuffer*& buffers,
+        VkDeviceMemory*& bufferMemories
+    ) {
+        buffers = new VkBuffer[numBuffers];
+        bufferMemories = new VkDeviceMemory[numBuffers];
+        for (uint32_t i = 0; i < numBuffers; ++i) {
+            createBuffer(device, bufferSizes[i], &buffers[i], &bufferMemories[i]);
+        }
+    }
+    
     
     // Must be after `createBuffers` but before `createComputePipeline`
     void fillBuffers(

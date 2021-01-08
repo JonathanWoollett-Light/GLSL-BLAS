@@ -63,7 +63,7 @@ private:
     VkCommandPool commandPool;
     VkCommandBuffer commandBuffer;
 public:
-    void run(
+    ComputeApplication(
         char* shaderFile,
         uint32_t const * bufferSizes,
         uint32_t numBuffers,
@@ -739,13 +739,11 @@ public:
 int main() {
 
     // +push_constant to all values in buffer
-    ComputeApplication app1;
     try {
         uint32_t size = 10;
         float** data = new float*[1];
         data[0] = new float[size]{ 1,2,3,4,5,5,4,3,2,1 };
-        
-        app1.run(
+        ComputeApplication app = ComputeApplication(
             "../glsl/sscal.spv",
             new uint32_t[1]{ size }, // Buffer sizes
             1, //  Number of buffers
@@ -762,13 +760,13 @@ int main() {
     }
     
     // +1 to all values in buffer
-    ComputeApplication app2;
+    
     try {
         uint32_t size = 10;
         float** data = new float* [1];
         data[0] = new float[size] { 1, 2, 3, 4, 5, 5, 4, 3, 2, 1 };
 
-        app2.run(
+        ComputeApplication app = ComputeApplication(
             "../glsl/plus.spv",
             new uint32_t[1]{ size }, // Buffer sizes
             1, //  Number of buffers

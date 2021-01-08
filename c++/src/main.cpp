@@ -217,6 +217,7 @@ public:
         // Gets number of physical devices
         uint32_t deviceCount;
         vkEnumeratePhysicalDevices(instance, &deviceCount, nullptr);
+        // Checks system has a device
         assert(deviceCount != 0);
 
         // Gets physical devices

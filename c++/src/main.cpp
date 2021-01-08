@@ -19,9 +19,9 @@ const int MATRIX_SIZE = 300;
 const int VECTOR_SIZE = MATRIX_SIZE * MATRIX_SIZE;
 
 #ifdef NDEBUG
-const auto enableValidationLayers2 = std::nullopt;
+const auto enableValidationLayers = std::nullopt;
 #else
-const auto enableValidationLayers2 = std::optional<char const*>{"VK_LAYER_KHRONOS_validation"};
+const auto enableValidationLayers = std::optional<char const*>{"VK_LAYER_KHRONOS_validation"};
 #endif
 
 // Used for validating return values of Vulkan API calls.
@@ -143,28 +143,11 @@ public:
         cleanup();
     }
 
-    #pragma warning(disable : 26812) // Removes enum scoping warnings from Vulkan
-    static VKAPI_ATTR VkBool32 VKAPI_CALL debugReportCallbackFn(
-        VkDebugReportFlagsEXT                       flags,
-        VkDebugReportObjectTypeEXT                  objectType,
-        uint64_t                                    object,
-        size_t                                      location,
-        int32_t                                     messageCode,
-        const char*                                 pLayerPrefix,
-        const char*                                 pMessage,
-        void*                                       pUserData) {
-
-        printf("Debug Report: %s: %s\n", pLayerPrefix, pMessage);
-
-        return VK_FALSE;
-    }
-    #pragma warning(default : 26812)
-
     // Initiates Vulkan instance
     void createInstance(std::vector<char const*> &enabledLayers, VkInstance& instance) {
         std::vector<char const*> enabledExtensions;
 
-        if (enableValidationLayers2.has_value()) {
+        if (enableValidationLayers.has_value()) {
             // Gets number of supported layers
             uint32_t layerCount;
             vkEnumerateInstanceLayerProperties(&layerCount, nullptr);
@@ -174,14 +157,14 @@ public:
 
             // Check 'VK_LAYER_KHRONOS_validation' is among supported layers
             auto layer_itr = std::find_if(layerProperties.begin(), layerProperties.end(), [](VkLayerProperties& prop) {
-                return (strcmp(enableValidationLayers2.value(), prop.layerName) == 0);
+                return (strcmp(enableValidationLayers.value(), prop.layerName) == 0);
             });
             // If not, throw error
             if (layer_itr == layerProperties.end()) {
                 throw std::runtime_error("Validation layer not supported\n");
             }
             // Else, push to layers and continue
-            enabledLayers.push_back(enableValidationLayers2.value());
+            enabledLayers.push_back(enableValidationLayers.value());
 
             
             // We need to enable the extension named VK_EXT_DEBUG_REPORT_EXTENSION_NAME,
@@ -221,7 +204,6 @@ public:
         }
     
         // Creates instance
-        
         #pragma warning(disable : 26812) // Removes enum scoping warnings from Vulkan
         VK_CHECK_RESULT(vkCreateInstance(
             &createInfo,

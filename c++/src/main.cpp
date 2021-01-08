@@ -166,7 +166,7 @@ public:
         if (enableValidationLayers2.has_value()) {
             // Gets number of supported layers
             uint32_t layerCount;
-            vkEnumerateInstanceLayerProperties(&layerCount, NULL);
+            vkEnumerateInstanceLayerProperties(&layerCount, nullptr);
             // Gets all supported layers
             std::vector<VkLayerProperties> layerProperties(layerCount);
             vkEnumerateInstanceLayerProperties(&layerCount, layerProperties.data());
@@ -188,10 +188,10 @@ public:
 
             // Gets number of supported extensions
             uint32_t extensionCount;
-            vkEnumerateInstanceExtensionProperties(NULL, &extensionCount, NULL);
+            vkEnumerateInstanceExtensionProperties(nullptr, &extensionCount, nullptr);
             // Gets all supported extensions
             std::vector<VkExtensionProperties> extensionProperties(extensionCount);
-            vkEnumerateInstanceExtensionProperties(NULL, &extensionCount, extensionProperties.data());
+            vkEnumerateInstanceExtensionProperties(nullptr, &extensionCount, extensionProperties.data());
             // Check 'VK_EXT_DEBUG_REPORT_EXTENSION_NAME' is among supported layers
             auto ext_itr = std::find_if(extensionProperties.begin(), extensionProperties.end(), [](VkExtensionProperties& prop) {
                 return (strcmp(VK_EXT_DEBUG_REPORT_EXTENSION_NAME, prop.extensionName) == 0);
@@ -222,7 +222,7 @@ public:
         // Creates instance
         VK_CHECK_RESULT(vkCreateInstance(
             &createInfo,
-            NULL,
+            nullptr,
             &instance)
         );
     }
@@ -230,7 +230,7 @@ public:
     void findPhysicalDevice(VkInstance& instance, VkPhysicalDevice& physicalDevice) {
         // Gets number of physical devices
         uint32_t deviceCount;
-        vkEnumeratePhysicalDevices(instance, &deviceCount, NULL);
+        vkEnumeratePhysicalDevices(instance, &deviceCount, nullptr);
         // presumes `deviceCount > 0`
 
         // Gets physical devices
@@ -245,7 +245,7 @@ public:
     uint32_t getComputeQueueFamilyIndex() {
         // Gets number of queue families
         uint32_t queueFamilyCount;
-        vkGetPhysicalDeviceQueueFamilyProperties(physicalDevice, &queueFamilyCount, NULL);
+        vkGetPhysicalDeviceQueueFamilyProperties(physicalDevice, &queueFamilyCount, nullptr);
 
         // Gets queue families
         std::vector<VkQueueFamilyProperties> queueFamilies(queueFamilyCount);
@@ -289,7 +289,7 @@ public:
             deviceCreateInfo.pEnabledFeatures = &deviceFeatures;
         }
 
-        VK_CHECK_RESULT(vkCreateDevice(physicalDevice, &deviceCreateInfo, NULL, &device)); // create logical device.
+        VK_CHECK_RESULT(vkCreateDevice(physicalDevice, &deviceCreateInfo, nullptr, &device)); // create logical device.
 
         // Get handle to queue 0 in `queueFamilyIndex` queue family
         vkGetDeviceQueue(device, queueFamilyIndex, 0, &queue);
@@ -343,7 +343,7 @@ public:
             bufferCreateInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE; // buffer is exclusive to a single queue family at a time. 
         }
 
-        VK_CHECK_RESULT(vkCreateBuffer(device, &bufferCreateInfo, NULL, buffer)); // Constructs buffer
+        VK_CHECK_RESULT(vkCreateBuffer(device, &bufferCreateInfo, nullptr, buffer)); // Constructs buffer
 
         // Buffers do not allocate memory upon construction, we must do it manually
         
@@ -366,7 +366,7 @@ public:
         );
 
         // Allocates memory
-        VK_CHECK_RESULT(vkAllocateMemory(device, &allocateInfo, NULL, bufferMemory));
+        VK_CHECK_RESULT(vkAllocateMemory(device, &allocateInfo, nullptr, bufferMemory));
 
         // Binds buffer to allocated memory
         VK_CHECK_RESULT(vkBindBufferMemory(device, *buffer, *bufferMemory, 0));
@@ -412,7 +412,7 @@ public:
         }
         
         // Create the descriptor set layout. 
-        VK_CHECK_RESULT(vkCreateDescriptorSetLayout(device, &descriptorSetLayoutCreateInfo, NULL, descriptorSetLayout));
+        VK_CHECK_RESULT(vkCreateDescriptorSetLayout(device, &descriptorSetLayoutCreateInfo, nullptr, descriptorSetLayout));
     }
     
     // Creates descriptor set
@@ -442,7 +442,7 @@ public:
         }
 
         // create descriptor pool.
-        VK_CHECK_RESULT(vkCreateDescriptorPool(device, &descriptorPoolCreateInfo, NULL, descriptorPool));
+        VK_CHECK_RESULT(vkCreateDescriptorPool(device, &descriptorPoolCreateInfo, nullptr, descriptorPool));
 
         // Specifies options for creation of multiple of descriptor sets
         VkDescriptorSetAllocateInfo descriptorSetAllocateInfo = {};
@@ -486,7 +486,7 @@ public:
         
 
         // perform the update of the descriptor set.
-        vkUpdateDescriptorSets(device, 1, &writeDescriptorSet, 0, NULL);
+        vkUpdateDescriptorSets(device, 1, &writeDescriptorSet, 0, nullptr);
     }
 
     // Read file into array of bytes, and cast to uint32_t*, then return.
@@ -541,7 +541,7 @@ public:
             createInfo.codeSize = filelength;
         }
 
-        VK_CHECK_RESULT(vkCreateShaderModule(device, &createInfo, NULL, computeShaderModule));
+        VK_CHECK_RESULT(vkCreateShaderModule(device, &createInfo, nullptr, computeShaderModule));
 
         // A compute pipeline is very simple compared to a graphics pipeline.
         // It only consists of a single stage with a compute shader.
@@ -569,7 +569,7 @@ public:
             
         }
         
-        VK_CHECK_RESULT(vkCreatePipelineLayout(device, &pipelineLayoutCreateInfo, NULL, pipelineLayout));
+        VK_CHECK_RESULT(vkCreatePipelineLayout(device, &pipelineLayoutCreateInfo, nullptr, pipelineLayout));
 
         // Set our pipeline options
         VkComputePipelineCreateInfo pipelineCreateInfo = {};
@@ -593,7 +593,7 @@ public:
         VK_CHECK_RESULT(vkCreateComputePipelines(
             device, VK_NULL_HANDLE,
             1, &pipelineCreateInfo,
-            NULL, pipeline));
+            nullptr, pipeline));
     }
     
     // Creates command buffer
@@ -617,7 +617,7 @@ public:
             // Sets queue family
             commandPoolCreateInfo.queueFamilyIndex = queueFamilyIndex;
         }
-        VK_CHECK_RESULT(vkCreateCommandPool(device, &commandPoolCreateInfo, NULL, commandPool));
+        VK_CHECK_RESULT(vkCreateCommandPool(device, &commandPoolCreateInfo, nullptr, commandPool));
 
         //  Allocates command buffer
         VkCommandBufferAllocateInfo commandBufferAllocateInfo = {};
@@ -642,7 +642,7 @@ public:
         // Binds pipeline (our functions)
         vkCmdBindPipeline(*commandBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, pipeline);
         // Binds descriptor set (our data)
-        vkCmdBindDescriptorSets(*commandBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, pipelineLayout, 0, 1, &descriptorSet, 0, NULL);
+        vkCmdBindDescriptorSets(*commandBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, pipelineLayout, 0, 1, &descriptorSet, 0, nullptr);
         
         // Sets push constants
         if (numPushConstants != 0) {
@@ -690,7 +690,7 @@ public:
             fenceCreateInfo.sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO;
             // fenceCreateInfo.flags = 0; // this is set by default // https://www.khronos.org/registry/vulkan/specs/1.2-extensions/man/html/VkFenceCreateFlagBits.html
         }
-        VK_CHECK_RESULT(vkCreateFence(device, &fenceCreateInfo, NULL, &fence));
+        VK_CHECK_RESULT(vkCreateFence(device, &fenceCreateInfo, nullptr, &fence));
 
         // Submit command buffer with fence
         VK_CHECK_RESULT(vkQueueSubmit(queue, 1, &submitInfo, fence));
@@ -699,7 +699,7 @@ public:
         VK_CHECK_RESULT(vkWaitForFences(device, 1, &fence, VK_TRUE, 100000000000));
 
         // Destructs fence
-        vkDestroyFence(device, fence, NULL);
+        vkDestroyFence(device, fence, nullptr);
     }
 
 
@@ -723,16 +723,16 @@ public:
     // Cleans up - Destructs everything
     void cleanup() {
         // TODO These top 2 probably wrong
-        vkFreeMemory(device, *bufferMemories, NULL);
-        vkDestroyBuffer(device, *buffers, NULL);
-        vkDestroyShaderModule(device, computeShaderModule, NULL);
-        vkDestroyDescriptorPool(device, descriptorPool, NULL);
-        vkDestroyDescriptorSetLayout(device, descriptorSetLayout, NULL);
-        vkDestroyPipelineLayout(device, pipelineLayout, NULL);
-        vkDestroyPipeline(device, pipeline, NULL);
-        vkDestroyCommandPool(device, commandPool, NULL);	
-        vkDestroyDevice(device, NULL);
-        vkDestroyInstance(instance, NULL);		
+        vkFreeMemory(device, *bufferMemories, nullptr);
+        vkDestroyBuffer(device, *buffers, nullptr);
+        vkDestroyShaderModule(device, computeShaderModule, nullptr);
+        vkDestroyDescriptorPool(device, descriptorPool, nullptr);
+        vkDestroyDescriptorSetLayout(device, descriptorSetLayout, nullptr);
+        vkDestroyPipelineLayout(device, pipelineLayout, nullptr);
+        vkDestroyPipeline(device, pipeline, nullptr);
+        vkDestroyCommandPool(device, commandPool, nullptr);	
+        vkDestroyDevice(device, nullptr);
+        vkDestroyInstance(instance, nullptr);		
     }
 };
 

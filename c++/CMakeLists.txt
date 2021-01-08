@@ -1,19 +1,33 @@
+# CMake version
 cmake_minimum_required (VERSION 3.8)
-project (gpu_blas)
 
-find_package(Vulkan)
+# Project name variable
+set(This Example2)
 
-# get rid of annoying MSVC warnings.
-add_definitions(-D_CRT_SECURE_NO_WARNINGS)
+# Sets project name and language `CXX`=C++
+project(${This} CXX)
 
-set (CMAKE_CXX_STANDARD 17)
+# Sets C++ version
+set(CMAKE_CXX_STANDARD 17)
 
-include_directories(${Vulkan_INCLUDE_DIR})
+find_package(Vulkan) # Finds Vulkan
+include_directories(${Vulkan_INCLUDE_DIR}) # Adds Vulkan
 
-set(ALL_LIBS  ${Vulkan_LIBRARY} )
+enable_testing() # Sets unit tests
+add_subdirectory(googletest) # Adds googletest
 
-add_executable(gpu_blas src/main.cpp)
+# Sets headers and soruce files
+set(Headers
+    Example.hpp
+)
+set(Sources
+    Example.cpp
+)
+# Adds library
+add_library(${This} STATIC ${Sources} ${Headers})
 
-set_target_properties(gpu_blas PROPERTIES VS_DEBUGGER_WORKING_DIRECTORY "${CMAKE_SOURCE_DIR}")
+# Adds test subdirectory
+add_subdirectory(test)
 
-target_link_libraries(gpu_blas ${ALL_LIBS} )
+# Links Vulkan
+target_link_libraries(${This} ${Vulkan_LIBRARY})

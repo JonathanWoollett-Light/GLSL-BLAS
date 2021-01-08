@@ -4,3 +4,4 @@
 /glsl/*.spv
 
 /c++/build
+c++/.vscode

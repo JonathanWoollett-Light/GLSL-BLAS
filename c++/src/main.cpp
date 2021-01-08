@@ -1,4 +1,3 @@
-
 #include <vulkan/vulkan.h>
 
 #include <iostream>
@@ -144,6 +143,7 @@ public:
         cleanup();
     }
 
+    #pragma warning(disable : 26812) // Removes enum scoping warnings from Vulkan
     static VKAPI_ATTR VkBool32 VKAPI_CALL debugReportCallbackFn(
         VkDebugReportFlagsEXT                       flags,
         VkDebugReportObjectTypeEXT                  objectType,
@@ -157,7 +157,8 @@ public:
         printf("Debug Report: %s: %s\n", pLayerPrefix, pMessage);
 
         return VK_FALSE;
-     }
+    }
+    #pragma warning(default : 26812)
 
     // Initiates Vulkan instance
     void createInstance(std::vector<char const*> &enabledLayers, VkInstance& instance) {
@@ -220,11 +221,14 @@ public:
         }
     
         // Creates instance
+        
+        #pragma warning(disable : 26812) // Removes enum scoping warnings from Vulkan
         VK_CHECK_RESULT(vkCreateInstance(
             &createInfo,
             nullptr,
             &instance)
         );
+        #pragma warning(default : 26812)
     }
 
     void findPhysicalDevice(VkInstance& instance, VkPhysicalDevice& physicalDevice) {

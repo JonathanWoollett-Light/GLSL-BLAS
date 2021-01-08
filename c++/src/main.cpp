@@ -9,6 +9,10 @@
 #include <stdexcept>
 #include <cmath>
 
+#include <functional>
+#include <optional>
+#include <string>
+
 #include <windows.h>
 #include <cstdlib>
 
@@ -16,9 +20,9 @@ const int MATRIX_SIZE = 300;
 const int VECTOR_SIZE = MATRIX_SIZE * MATRIX_SIZE;
 
 #ifdef NDEBUG
-const bool enableValidationLayers = false;
+const auto enableValidationLayers2 = std::nullopt;
 #else
-const bool enableValidationLayers = true;
+const auto enableValidationLayers2 = std::optional<char const*>{"VK_LAYER_KHRONOS_validation"};
 #endif
 
 // Used for validating return values of Vulkan API calls.
@@ -157,60 +161,46 @@ public:
 
     // Initiates Vulkan instance
     void createInstance(std::vector<char const*> &enabledLayers, VkInstance& instance) {
-        std::vector<const char*> enabledExtensions;
+        std::vector<char const*> enabledExtensions;
 
-        if (enableValidationLayers) {
-            /*
-            We get all supported layers with vkEnumerateInstanceLayerProperties.
-            */
+        if (enableValidationLayers2.has_value()) {
+            // Gets number of supported layers
             uint32_t layerCount;
             vkEnumerateInstanceLayerProperties(&layerCount, NULL);
-
+            // Gets all supported layers
             std::vector<VkLayerProperties> layerProperties(layerCount);
             vkEnumerateInstanceLayerProperties(&layerCount, layerProperties.data());
 
-            /*
-            And then we simply check if VK_LAYER_LUNARG_standard_validation is among the supported layers.
-            */
-            bool foundLayer = false;
-            for (VkLayerProperties prop : layerProperties) {
-
-                if (strcmp("VK_LAYER_KHRONOS_validation", prop.layerName) == 0) {
-                    foundLayer = true;
-                    break;
-                }
+            // Check 'VK_LAYER_KHRONOS_validation' is among supported layers
+            auto layer_itr = std::find_if(layerProperties.begin(), layerProperties.end(), [](VkLayerProperties& prop) {
+                return (strcmp(enableValidationLayers2.value(), prop.layerName) == 0);
+            });
+            // If not, throw error
+            if (layer_itr == layerProperties.end()) {
+                throw std::runtime_error("Validation layer not supported\n");
             }
+            // Else, push to layers and continue
+            enabledLayers.push_back(enableValidationLayers2.value());
 
-            if (!foundLayer) {
-                throw std::runtime_error("Layer VK_LAYER_KHRONOS_validation not supported\n");
-            }
-            enabledLayers.push_back("VK_LAYER_KHRONOS_validation"); // Alright, we can use this layer.
+            
+            // We need to enable the extension named VK_EXT_DEBUG_REPORT_EXTENSION_NAME,
+            //  to print the warnings emitted by the validation layer.
 
-            /*
-            We need to enable an extension named VK_EXT_DEBUG_REPORT_EXTENSION_NAME,
-            in order to be able to print the warnings emitted by the validation layer.
-
-            So again, we just check if the extension is among the supported extensions.
-            */
-
+            // Gets number of supported extensions
             uint32_t extensionCount;
-
             vkEnumerateInstanceExtensionProperties(NULL, &extensionCount, NULL);
+            // Gets all supported extensions
             std::vector<VkExtensionProperties> extensionProperties(extensionCount);
             vkEnumerateInstanceExtensionProperties(NULL, &extensionCount, extensionProperties.data());
-
-            bool foundExtension = false;
-            for (VkExtensionProperties prop : extensionProperties) {
-                if (strcmp(VK_EXT_DEBUG_REPORT_EXTENSION_NAME, prop.extensionName) == 0) {
-                    foundExtension = true;
-                    break;
-                }
-
-            }
-
-            if (!foundExtension) {
+            // Check 'VK_EXT_DEBUG_REPORT_EXTENSION_NAME' is among supported layers
+            auto ext_itr = std::find_if(extensionProperties.begin(), extensionProperties.end(), [](VkExtensionProperties& prop) {
+                return (strcmp(VK_EXT_DEBUG_REPORT_EXTENSION_NAME, prop.extensionName) == 0);
+            });
+            // If not, throw error
+            if (ext_itr == extensionProperties.end()) {
                 throw std::runtime_error("Extension VK_EXT_DEBUG_REPORT_EXTENSION_NAME not supported\n");
             }
+            // Else, push to layers and continue
             enabledExtensions.push_back(VK_EXT_DEBUG_REPORT_EXTENSION_NAME);
         }
 

@@ -1,6 +1,5 @@
 #version 450
 #extension GL_KHR_shader_subgroup_arithmetic: enable
-#extension GL_EXT_shader_atomic_float: enable
 
 layout(local_size_x = 1024, local_size_y = 1, local_size_z = 1) in;
 
@@ -8,7 +7,7 @@ layout(binding = 0) buffer Buffer0 {
     float x[];
 };
 layout(binding = 1) buffer Output {
-    uint indx_max; //Global maximum index
+    uint indx_max[]; // Workgroup maximum indicies
 };
 
 const float neg_inf = -1. / 0.; // practically float::min()
@@ -35,13 +34,10 @@ void main() {
     if (gl_SubgroupID == 0)
     {
         // Given we have S subgroups and I invocations to work with (where I>=S), we only need to set S of I invocations to the subgroup maxes.
-        // (`neg_inf` used to prevent max selecting the respective invocations)
+        // (`neg_inf` used to prevent max selecting unused shared elements)
         float s_max = gl_SubgroupInvocationID < gl_NumSubgroups ? sdata[gl_SubgroupInvocationID] : neg_inf;
         
-        // For the subgroup with the max workgroup value...
-        if (s_max == subgroupMax(s_max)) {
-            atomicExchange(indx_max, s_max > x[indx_max] ? indx: indx_max);
-            // atomicCompSwap(indx_max, s_max < x[indx_max] ? indx: indx_max, indx);
-        }
+        // For the invocation in the subgroup representing the max subgroup value within the workgroup:
+        if (s_max == subgroupMax(s_max)) indx_max[gl_WorkGroupID] = s_max;
     }
 }

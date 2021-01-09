@@ -5,7 +5,6 @@
 // sasum operation:
 // + subgroup operations
 // + atomics
-// - inter-workgroup buffer
 
 // I beleive this is the best (fastest) version of sasum.
 

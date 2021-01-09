@@ -16,7 +16,6 @@ layout(binding = 1) buffer Output
 };
 
 const int sumSubGroupSize = 64; // = workgroup size / subgroup size = 1024 / 64
-
 shared float sdata[sumSubGroupSize];
 
 void main() {
@@ -32,8 +31,7 @@ void main() {
 
     barrier();
 
-    if (gl_SubgroupID == 0)
-    {
+    if (gl_SubgroupID == 0) {
         sum = gl_SubgroupInvocationID < gl_NumSubgroups ? sdata[gl_SubgroupInvocationID] : 0;
         sum = subgroupAdd(sum);
     }

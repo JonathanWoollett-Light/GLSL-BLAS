@@ -57,7 +57,7 @@ ComputeApp::ComputeApp(
     this->numBuffers = numBuffers;
 
     // Initialize vulkan:
-    createInstance(enabledLayers,instance,requiresAtomic);
+    createInstance(instance,requiresAtomic);
 
     // Gets physical device
     getPhysicalDevice(instance, physicalDevice);
@@ -108,7 +108,8 @@ ComputeApp::ComputeApp(
 }
 
 // Gets Vulkan instance
-void ComputeApp::createInstance(std::vector<char const*> &enabledLayers, VkInstance& instance, bool requiresAtomic) {
+void ComputeApp::createInstance(VkInstance& instance, bool requiresAtomic) {
+    std::vector<char const*> enabledLayers;
     std::vector<char const*> enabledExtensions;
 
     if (enableValidationLayers.has_value()) {

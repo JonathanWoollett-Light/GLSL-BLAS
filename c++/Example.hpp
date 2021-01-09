@@ -87,7 +87,7 @@ class ComputeApp {
     // --------------------------------------------------
     private:
         // Gets Vulkan instance
-        void createInstance(std::vector<char const*> &enabledLayers, VkInstance& instance, bool requiresAtomic);
+        void createInstance(VkInstance& instance, bool requiresAtomic);
         
         // Gets physical device
         void getPhysicalDevice(VkInstance& instance, VkPhysicalDevice& physicalDevice);

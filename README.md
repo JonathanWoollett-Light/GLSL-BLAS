@@ -29,6 +29,9 @@ Sy | Desc
 </td></tr> </table>
 
 ## Support
+
+Your GPU almost certainly supports subgroups operations, but may likely not support float atomics ([list of GPUs which support float atomics](https://vulkan.gpuinfo.org/listdevicescoverage.php?extension=VK_EXT_shader_atomic_float)). I am planning procedures for circumstance both with and without support for float atomics.
+
 Library |  `GL_EXT_shader_atomic_float` | `GL_KHR_shader_subgroup_arithmetic`
 --- | --- | ---
 [WebGPU](https://github.com/gfx-rs/wgpu) | ❌ | ✔️
@@ -40,5 +43,3 @@ Library |  `GL_EXT_shader_atomic_float` | `GL_KHR_shader_subgroup_arithmetic`
 Both can be worked around, but awkwardly.
 
 Neither are new, code shouldn't need to be made worse due to the lack of support here.
-
-Floating point atomic operations in particular are fundemental compute operations, while lack of support for subgroup operations is dissapointing, lack of support for floating point atomics is egregious.

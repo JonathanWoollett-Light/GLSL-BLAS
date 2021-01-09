@@ -30,7 +30,7 @@ Sy | Desc
 
 ## Support
 
-Your GPU almost certainly supports subgroups operations, but may likely not support float atomics ([list of GPUs which support float atomics](https://vulkan.gpuinfo.org/listdevicescoverage.php?extension=VK_EXT_shader_atomic_float)). I am planning procedures for circumstance both with and without support for float atomics.
+Your GPU likely supports subgroups operations, but likely does not support float atomics ([list of GPUs which support float atomics](https://vulkan.gpuinfo.org/listdevicescoverage.php?extension=VK_EXT_shader_atomic_float)). I am planning procedures for circumstance both with and without support for float atomics.
 
 Library |  `GL_EXT_shader_atomic_float` | `GL_KHR_shader_subgroup_arithmetic`
 --- | --- | ---

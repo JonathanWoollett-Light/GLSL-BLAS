@@ -54,6 +54,7 @@ class ShaderRunInfo {
     // Methods
     // --------------------------------------------------
     public:
+        ShaderRunInfo() = default;
         ShaderRunInfo(
             VkDevice& device,
             VkBuffer*& buffers,
@@ -119,8 +120,6 @@ class ShaderRunInfo {
             VkDevice& device,
             VkQueue& queue
         );
-
-        ~ShaderRunInfo();
 };
 
 class ComputeApp {

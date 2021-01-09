@@ -372,14 +372,6 @@ void ShaderRunInfo::runCommandBuffer(
     vkDestroyFence(device, fence, nullptr);
 }
 
-// ShaderRunInfo::~ShaderRunInfo() {
-//     vkDestroyShaderModule(device, computeShaderModule, nullptr);
-//     vkDestroyDescriptorPool(device, descriptorPool, nullptr);
-//     vkDestroyDescriptorSetLayout(device, descriptorSetLayout, nullptr);
-//     vkDestroyPipelineLayout(device, pipelineLayout, nullptr);
-//     vkDestroyPipeline(device, pipeline, nullptr);
-//     vkDestroyCommandPool(device, commandPool, nullptr);
-// }
 
 // --------------------------------------------------
 // ComputeApp
@@ -426,6 +418,8 @@ void ComputeApp::print(
     vkUnmapMemory(device, bufferMemory);
 }
 
+
+
 ComputeApp::ComputeApp(
     char* shaderFile,
     uint32_t const * bufferSizes,
@@ -456,19 +450,19 @@ ComputeApp::ComputeApp(
     this->numBuffers = numBuffers;
 
     // Initialize vulkan:
-    createInstance(instance,requiresAtomic);
+    createInstance(this->instance,requiresAtomic);
 
     // Gets physical device
-    getPhysicalDevice(instance, physicalDevice);
+    getPhysicalDevice(this->instance, this->physicalDevice);
 
     // Gets logical device
-    createDevice(physicalDevice, queueFamilyIndex, device, queue);
+    createDevice(this->physicalDevice, this->queueFamilyIndex, this->device, this->queue);
 
     // Creates buffers
-    createBuffers(device, bufferSizes, numBuffers, buffers, bufferMemories);
+    createBuffers(this->device, bufferSizes, numBuffers, this->buffers, this->bufferMemories);
 
     // Fills buffers
-    fillBuffers(device, bufferData, bufferMemories, numBuffers, bufferSizes);
+    fillBuffers(this->device, bufferData, this->bufferMemories, numBuffers, bufferSizes);
 
     this->baseShaderRunInfo = ShaderRunInfo(
         this->device,

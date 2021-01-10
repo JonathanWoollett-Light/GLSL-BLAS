@@ -339,8 +339,8 @@ TEST(SDOT_PARTIAL, two) {
         true
     );
 
-    ComputeApp::print(app.device,app.bufferMemories[2],workgroups);
-    ASSERT_EQ(false,true);
+    // ComputeApp::print(app.device,app.bufferMemories[2],workgroups);
+    // ASSERT_EQ(false,true);
 
     // Checking
     float* out = ComputeApp::map(app.device,app.bufferMemories[2]);

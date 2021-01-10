@@ -143,7 +143,7 @@ class ComputeApp {
         VkBuffer* buffers;
 
         ShaderRunInfo baseShaderRunInfo;
-        std::optional<ShaderRunInfo> reductionShaderInfo = std::nullopt;
+        ShaderRunInfo* reductionShaderInfo;
 
         // VkDescriptorSetLayout descriptorSetLayout;
         // VkDescriptorPool descriptorPool;
@@ -158,7 +158,8 @@ class ComputeApp {
         // VkCommandPool commandPool;
         // VkCommandBuffer commandBuffer;
 
-        uint32_t numBuffers; // necessary for destruction
+        uint32_t numBuffers; // neccessary for destruction
+        uint32_t numReductions; //neccessary for destruction
 
     // --------------------------------------------------
     // Public methods
@@ -171,12 +172,18 @@ class ComputeApp {
             uint32_t const stride,
             uint32_t const segments
         );
+        static void clear(
+            VkDevice& device,
+            VkDeviceMemory& bufferMemory,
+            uint32_t const start,
+            uint32_t const stop
+        );
         static float* map(VkDevice& device, VkDeviceMemory& bufferMemory);
         static void print(VkDevice& device,VkDeviceMemory& bufferMemory, uint32_t size);
 
         ComputeApp(
             char* shaderFile,
-            uint32_t const * bufferSizes,
+            uint32_t* bufferSizes,
             uint32_t numBuffers,
             float**& bufferData,
             float* pushConstants,

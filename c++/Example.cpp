@@ -485,32 +485,32 @@ ComputeApp::ComputeApp(
 
         
 
-        // if (dims[0] > dimLengths[0]) {
-        //     dims[0] = ceil(dims[0] / static_cast<float>(dimLengths[0]));
+        if (dims[0] > dimLengths[0]) {
+            dims[0] = ceil(dims[0] / static_cast<float>(dimLengths[0]));
 
-        //     this->reductionShaderInfo = ShaderRunInfo(
-        //         this->device,
-        //         this->buffers,
-        //         this->queueFamilyIndex,
-        //         this->queue,
-        //         reductionShader,
-        //         numBuffers,
-        //         pushConstants,
-        //         numPushConstants,
-        //         dims, // [x,y,z],
-        //         dimLengths, // [local_size_x, local_size_y, local_size_z]
-        //         bufferSizes // TODO
-        //     );
+            this->reductionShaderInfo = ShaderRunInfo(
+                this->device,
+                this->buffers,
+                this->queueFamilyIndex,
+                this->queue,
+                reductionShader,
+                numBuffers,
+                pushConstants,
+                numPushConstants,
+                dims, // [x,y,z],
+                dimLengths, // [local_size_x, local_size_y, local_size_z]
+                bufferSizes // TODO
+            );
             
-        //     while (dims[0] > dimLengths[0]) {
-        //         dims[0] = ceil(dims[0] / static_cast<float>(dimLengths[0]));
-        //         this->reductionShaderInfo.value().runCommandBuffer(
-        //             &this->reductionShaderInfo.value().commandBuffer,
-        //             this->device,
-        //             this->queue
-        //         );
-        //     }
-        // }
+            // while (dims[0] > dimLengths[0]) {
+            //     dims[0] = ceil(dims[0] / static_cast<float>(dimLengths[0]));
+            //     this->reductionShaderInfo.value().runCommandBuffer(
+            //         &this->reductionShaderInfo.value().commandBuffer,
+            //         this->device,
+            //         this->queue
+            //     );
+            // }
+        }
     }
 }
 

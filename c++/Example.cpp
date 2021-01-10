@@ -12,7 +12,7 @@ ShaderRunInfo::ShaderRunInfo(
     VkBuffer*& buffers,
     uint32_t queueFamilyIndex,
     VkQueue& queue,
-    char* shaderFile,
+    char const* shaderFile,
     uint32_t numBuffers,
     float* pushConstants,
     uint32_t numPushConstants,
@@ -197,7 +197,7 @@ uint32_t* ShaderRunInfo::readShader(uint32_t& length, const char* filename) {
 // Creates compute pipeline
 void ShaderRunInfo::createComputePipeline(
     VkDevice& device,
-    char* shaderFile,
+    char const* shaderFile,
     VkShaderModule* computeShaderModule,
     VkDescriptorSetLayout* descriptorSetLayout,
     VkPipelineLayout* pipelineLayout,
@@ -420,8 +420,6 @@ void ComputeApp::print(
     vkUnmapMemory(device, bufferMemory);
 }
 
-
-
 ComputeApp::ComputeApp(
     char* shaderFile,
     uint32_t const * bufferSizes,
@@ -429,10 +427,10 @@ ComputeApp::ComputeApp(
     float**& bufferData,
     float* pushConstants,
     uint32_t numPushConstants,
-    uint32_t const* dims, // [x,y,z],
+    uint32_t* dims, // [x,y,z],
     uint32_t const* dimLengths, // [local_size_x, local_size_y, local_size_z]
     bool requiresAtomic,
-    std::optional<Reduction> reduction
+    bool reduction
 ) {
     // std::cout << "in:" << std::endl;
     // for (uint32_t i = 0; i < numBuffers; ++i) {
@@ -480,19 +478,30 @@ ComputeApp::ComputeApp(
         bufferSizes // TODO
     );
 
-    // if (reduction.has_value()) {
-    //     uint32_t size = dims[0];
+    if (reduction) {
+        uint32_t const invocations = ceil(dims[0] / static_cast<float>(dimLengths[0]));
+        dims[0] = invocations;
 
-    //     while  (size > dimLengths[0]) {
-    //         uint32_t const segments = ceil(dims[0] / static_cast<float>(dimLengths[0]));
-    //         // uint32_t const size = segments * dimLengths[0];
-            
-    //         for(uint32_t i=0;i<numBuffers;++i) {
-    //             shrink(device,this->bufferMemories[i],dims[0],dimLengths[0],segments);
-    //         }
-    //         size = segments;
-    //     }
-    // }
+        // shrink(device,this->bufferMemories[numBuffers-1],size,dimLengths[0],segments);
+
+        char reductionShader[strlen(shaderFile)+6];
+        strcpy(reductionShader,shaderFile);
+        strcat(reductionShader,"_e.spv");
+
+        this->reductionShaderInfo = ShaderRunInfo(
+            this->device,
+            this->buffers,
+            this->queueFamilyIndex,
+            this->queue,
+            reductionShader,
+            numBuffers,
+            pushConstants,
+            numPushConstants,
+            dims, // [x,y,z],
+            dimLengths, // [local_size_x, local_size_y, local_size_z]
+            bufferSizes // TODO
+        );
+    }
 }
 
 // Gets Vulkan instance
@@ -769,6 +778,15 @@ ComputeApp::~ComputeApp() {
     vkDestroyPipelineLayout(device, baseShaderRunInfo.pipelineLayout, nullptr);
     vkDestroyPipeline(device, baseShaderRunInfo.pipeline, nullptr);
     vkDestroyCommandPool(device, baseShaderRunInfo.commandPool, nullptr);
+
+    if(reductionShaderInfo.has_value()) {
+        vkDestroyShaderModule(device, reductionShaderInfo.value().computeShaderModule, nullptr);
+        vkDestroyDescriptorPool(device, reductionShaderInfo.value().descriptorPool, nullptr);
+        vkDestroyDescriptorSetLayout(device, reductionShaderInfo.value().descriptorSetLayout, nullptr);
+        vkDestroyPipelineLayout(device, reductionShaderInfo.value().pipelineLayout, nullptr);
+        vkDestroyPipeline(device, reductionShaderInfo.value().pipeline, nullptr);
+        vkDestroyCommandPool(device, reductionShaderInfo.value().commandPool, nullptr);
+    }
 
     vkDestroyDevice(device, nullptr);
     vkDestroyInstance(instance, nullptr);		

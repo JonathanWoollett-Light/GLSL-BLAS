@@ -60,7 +60,7 @@ class ShaderRunInfo {
             VkBuffer*& buffers,
             uint32_t queueFamilyIndex,
             VkQueue& queue,
-            char* shaderFile,
+            char const* shaderFile,
             uint32_t numBuffers,
             float* pushConstants,
             uint32_t numPushConstants,
@@ -92,7 +92,7 @@ class ShaderRunInfo {
         // Creates compute pipeline
         void createComputePipeline(
             VkDevice& device,
-            char* shaderFile,
+            char const* shaderFile,
             VkShaderModule* computeShaderModule,
             VkDescriptorSetLayout* descriptorSetLayout,
             VkPipelineLayout* pipelineLayout,
@@ -143,6 +143,7 @@ class ComputeApp {
         VkBuffer* buffers;
 
         ShaderRunInfo baseShaderRunInfo;
+        std::optional<ShaderRunInfo> reductionShaderInfo = std::nullopt;
 
         // VkDescriptorSetLayout descriptorSetLayout;
         // VkDescriptorPool descriptorPool;
@@ -180,10 +181,10 @@ class ComputeApp {
             float**& bufferData,
             float* pushConstants,
             uint32_t numPushConstants,
-            uint32_t const* dims, // [x,y,z],
+            uint32_t* dims, // [x,y,z],
             uint32_t const* dimLengths, // [local_size_x, local_size_y, local_size_z]
             bool requiresAtomic,
-            std::optional<Reduction> reduction = std::nullopt
+            bool reduction = false
         );
         ~ComputeApp();
     // --------------------------------------------------

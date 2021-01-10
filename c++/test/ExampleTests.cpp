@@ -230,7 +230,7 @@ TEST(SDOT, DISABLED_one) {
 
 // Constant values requiring 1 application of the partial extension shader
 TEST(SDOT_PARTIAL, one) {
-    uint32_t size = 1025;
+    uint32_t size = WORKGROUP_SIZE+1;
     uint32_t workgroups = ceil(size / static_cast<float>(WORKGROUP_SIZE));
 
     float** data = new float*[3];
@@ -262,14 +262,16 @@ TEST(SDOT_PARTIAL, one) {
 
     // Checking
     float* out = ComputeApp::map(app.device,app.bufferMemories[2]);
-    ASSERT_EQ(*out,2050);
+    ASSERT_EQ(*out,size*2);
 }
 // Random values requiring 1 application of the partial extension shader
 TEST(SDOT_PARTIAL, random_one) {
     srand((unsigned int)time(NULL));
 
     for(uint32_t i=0;i<RAND_RUNS;++i) {
-        uint32_t size = 1025 + (rand() % uint32_t(1048576 - 1025 + 1));
+        uint32_t max = WORKGROUP_SIZE*WORKGROUP_SIZE;
+        uint32_t min = WORKGROUP_SIZE+1;
+        uint32_t size = min + (rand() % uint32_t(max - min + 1));
         uint32_t workgroups = ceil(size / static_cast<float>(WORKGROUP_SIZE));
 
         float** data = new float*[3];
@@ -307,4 +309,40 @@ TEST(SDOT_PARTIAL, random_one) {
         }
         ASSERT_NEAR(*out,sum,EPSILON);
     }
+}
+// Constant values requiring 2 applications of the partial extension shader
+TEST(SDOT_PARTIAL, two) {
+    uint32_t size = WORKGROUP_SIZE*WORKGROUP_SIZE+1; //1024*1024+1
+    uint32_t workgroups = ceil(size / static_cast<float>(WORKGROUP_SIZE));
+
+    float** data = new float*[3];
+    data[0] = new float[size];
+    data[1] = new float[size];
+    data[2] = new float[workgroups];
+
+    for(uint32_t j=0;j<size;++j) {
+        data[0][j] = 1;
+        data[1][j] = 2;
+    }
+
+    char shader[] = "../../../glsl/sdot_partial.spv";
+    ComputeApp app = ComputeApp(
+        shader,
+        new uint32_t[3]{ size, size, workgroups }, // Buffer sizes
+        3, //  Number of buffers
+        data, // Buffer data
+        new float[0]{}, // Push constants
+        0, // Number of push constants
+        new uint32_t[3]{ size,1,1 }, // Invocations
+        new uint32_t[3]{ WORKGROUP_SIZE,1,1 }, // Workgroup sizes
+        false, // Requires atomic float
+        true
+    );
+
+    // ComputeApp::print(app.device,app.bufferMemories[2],workgroups);
+    // ASSERT_EQ(false,true);
+
+    // Checking
+    float* out = ComputeApp::map(app.device,app.bufferMemories[2]);
+    ASSERT_EQ(*out,size*2);
 }

@@ -479,28 +479,38 @@ ComputeApp::ComputeApp(
     );
 
     if (reduction) {
-        uint32_t const invocations = ceil(dims[0] / static_cast<float>(dimLengths[0]));
-        dims[0] = invocations;
-
-        // shrink(device,this->bufferMemories[numBuffers-1],size,dimLengths[0],segments);
-
         char reductionShader[strlen(shaderFile)+6];
         strcpy(reductionShader,shaderFile);
         strcat(reductionShader,"_e.spv");
 
-        this->reductionShaderInfo = ShaderRunInfo(
-            this->device,
-            this->buffers,
-            this->queueFamilyIndex,
-            this->queue,
-            reductionShader,
-            numBuffers,
-            pushConstants,
-            numPushConstants,
-            dims, // [x,y,z],
-            dimLengths, // [local_size_x, local_size_y, local_size_z]
-            bufferSizes // TODO
-        );
+        
+
+        // if (dims[0] > dimLengths[0]) {
+        //     dims[0] = ceil(dims[0] / static_cast<float>(dimLengths[0]));
+
+        //     this->reductionShaderInfo = ShaderRunInfo(
+        //         this->device,
+        //         this->buffers,
+        //         this->queueFamilyIndex,
+        //         this->queue,
+        //         reductionShader,
+        //         numBuffers,
+        //         pushConstants,
+        //         numPushConstants,
+        //         dims, // [x,y,z],
+        //         dimLengths, // [local_size_x, local_size_y, local_size_z]
+        //         bufferSizes // TODO
+        //     );
+            
+        //     while (dims[0] > dimLengths[0]) {
+        //         dims[0] = ceil(dims[0] / static_cast<float>(dimLengths[0]));
+        //         this->reductionShaderInfo.value().runCommandBuffer(
+        //             &this->reductionShaderInfo.value().commandBuffer,
+        //             this->device,
+        //             this->queue
+        //         );
+        //     }
+        // }
     }
 }
 

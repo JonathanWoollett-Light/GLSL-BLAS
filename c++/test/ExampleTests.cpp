@@ -190,7 +190,7 @@ TEST(SAXPY, random) {
 // My GPU does not support 'VK_EXT_SHADER_ATOMIC_FLOAT_EXTENSION' thus all tests of shaders with it are disabled.
 TEST(SDOT, DISABLED_one) {
     uint32_t size = 10;
-    float** data = new float*[2];
+    float** data = new float*[3];
     data[0] = new float[size]{ 1,2,3,4,5,5,4,3,2,1 };
     data[1] = new float[size]{ 9,8,7,6,5,4,3,2,1,0 };
     data[2] = new float[1]{ 0 };
@@ -221,7 +221,7 @@ TEST(SDOT_PARTIAL, one) {
     uint32_t size = 10;
     uint32_t workgroups = ceil(size / static_cast<float>(WORKGROUP_SIZE));
 
-    float** data = new float*[2];
+    float** data = new float*[3];
     data[0] = new float[size]{ 1,2,3,4,5,5,4,3,2,1 };
     data[1] = new float[size]{ 9,8,7,6,5,4,3,2,1,0 };
     data[2] = new float[workgroups];
@@ -238,6 +238,46 @@ TEST(SDOT_PARTIAL, one) {
         new uint32_t[3]{ WORKGROUP_SIZE,1,1 }, // Workgroup sizes
         false // Requires atomic float
     );
+
+    // Checking
+    float* out = ComputeApp::map(app.device,app.bufferMemories[2]);
+    float sum = 0;
+    for(uint32_t i=0;i<size;++i) {
+        sum += data[0][i]*data[1][i];
+    }
+    ASSERT_EQ(*out,sum);
+}
+TEST(SDOT_PARTIAL, random) {
+    uint32_t size = 1025;
+    uint32_t workgroups = ceil(size / static_cast<float>(WORKGROUP_SIZE));
+
+    float** data = new float*[3];
+    data[0] = new float[size];
+    data[1] = new float[size];
+    data[2] = new float[workgroups];
+
+    for(uint32_t j=0;j<size;++j) {
+        data[0][j] = 1;
+        data[1][j] = 2;
+        // data[0][j] = float(rand())/float(RAND_MAX);
+        // data[1][j] = float(rand())/float(RAND_MAX);
+    }
+
+    char shader[] = "../../../glsl/sdot_partial.spv";
+    ComputeApp app = ComputeApp(
+        shader,
+        new uint32_t[3]{ size, size, workgroups }, // Buffer sizes
+        3, //  Number of buffers
+        data, // Buffer data
+        new float[0]{}, // Push constants
+        0, // Number of push constants
+        new uint32_t[3]{ size,1,1 }, // Invocations
+        new uint32_t[3]{ WORKGROUP_SIZE,1,1 }, // Workgroup sizes
+        false // Requires atomic float
+    );
+
+    ComputeApp::print(app.device,app.bufferMemories[2],workgroups);
+    ASSERT_EQ(false,true);
 
     // Checking
     float* out = ComputeApp::map(app.device,app.bufferMemories[2]);

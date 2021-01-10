@@ -412,12 +412,11 @@ void ComputeApp::print(
     void* data = nullptr;
     vkMapMemory(device, bufferMemory, 0, VK_WHOLE_SIZE, 0, &data);
     float* actualData = (float*)data;
-    std::cout << "out:" << std::endl;
-    std::cout << '\t';
+    std::cout << '\t' << '[' << ' ';
     for (uint32_t i = 0; i < size; ++i) {
         std::cout << actualData[i] << ' ';
     }
-    std::cout << std::endl;
+    std::cout << ']' <<std::endl;
     vkUnmapMemory(device, bufferMemory);
 }
 

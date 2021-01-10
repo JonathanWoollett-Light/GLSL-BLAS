@@ -30,5 +30,5 @@ void main() {
     }
 
     // For 1 invocation in the workgroup, the workgroup
-    if (gl_LocalInvocationID.x == 0) total[gl_WorkGroupID] = sum;
+    if (gl_LocalInvocationID.x == 0) total[gl_WorkGroupID.x] = sum;
 }

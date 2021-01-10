@@ -61,12 +61,12 @@ class ShaderRunInfo {
             uint32_t queueFamilyIndex,
             VkQueue& queue,
             char* shaderFile,
-            uint32_t const * bufferSizes,
             uint32_t numBuffers,
             float* pushConstants,
             uint32_t numPushConstants,
-            int const* dims, // [x,y,z],
-            int const* dimLengths // [local_size_x, local_size_y, local_size_z]
+            uint32_t const* dims, // [x,y,z],
+            uint32_t const* dimLengths, // [local_size_x, local_size_y, local_size_z]
+            std::optional<uint32_t const*> bufferSizes = std::nullopt
         );
 
         // Creates descriptor set layout
@@ -82,7 +82,8 @@ class ShaderRunInfo {
             uint32_t storageBuffers,
             VkDescriptorPool* descriptorPool,
             VkDescriptorSetLayout* descriptorSetLayout,
-            VkBuffer* buffers
+            VkBuffer* buffers,
+            std::optional<uint32_t const*> bufferSizes = std::nullopt
         );
 
         // Reads shader file
@@ -110,8 +111,8 @@ class ShaderRunInfo {
             VkPipelineLayout& pipelineLayout,
             float const* pushConstants,
             uint32_t numPushConstants,
-            int const* dims, // [x,y,z],
-            int const* dimLengths // [local_size_x, local_size_y, local_size_z]
+            uint32_t const* dims, // [x,y,z],
+            uint32_t const* dimLengths // [local_size_x, local_size_y, local_size_z]
         );
 
         // Runs command buffer
@@ -179,8 +180,8 @@ class ComputeApp {
             float**& bufferData,
             float* pushConstants,
             uint32_t numPushConstants,
-            int const* dims, // [x,y,z],
-            int const* dimLengths, // [local_size_x, local_size_y, local_size_z]
+            uint32_t const* dims, // [x,y,z],
+            uint32_t const* dimLengths, // [local_size_x, local_size_y, local_size_z]
             bool requiresAtomic,
             std::optional<Reduction> reduction = std::nullopt
         );

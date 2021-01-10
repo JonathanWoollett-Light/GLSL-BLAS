@@ -13,18 +13,18 @@ ShaderRunInfo::ShaderRunInfo(
     uint32_t queueFamilyIndex,
     VkQueue& queue,
     char* shaderFile,
-    uint32_t const * bufferSizes,
     uint32_t numBuffers,
     float* pushConstants,
     uint32_t numPushConstants,
-    int const* dims, // [x,y,z],
-    int const* dimLengths // [local_size_x, local_size_y, local_size_z]
+    uint32_t const* dims, // [x,y,z],
+    uint32_t const* dimLengths, // [local_size_x, local_size_y, local_size_z]
+    std::optional<uint32_t const*> bufferSizes
 ) {
     // Creates descriptor set layout
     createDescriptorSetLayout(device, numBuffers, &descriptorSetLayout);
 
     // Create descriptor set
-    createDescriptorSet(device,numBuffers, &descriptorPool,&descriptorSetLayout,buffers);
+    createDescriptorSet(device,numBuffers, &descriptorPool,&descriptorSetLayout,buffers,bufferSizes);
 
     // Creates compute pipeline
     createComputePipeline(
@@ -88,7 +88,8 @@ void ShaderRunInfo::createDescriptorSet(
     uint32_t storageBuffers,
     VkDescriptorPool* descriptorPool,
     VkDescriptorSetLayout* descriptorSetLayout,
-    VkBuffer* buffers
+    VkBuffer* buffers,
+    std::optional<uint32_t const*> bufferSizes
 ) {
     // Creates descriptor pool
     // A pool implements a number of descriptors of each type 
@@ -137,7 +138,8 @@ void ShaderRunInfo::createDescriptorSet(
         for (uint32_t i = 0; i < storageBuffers; ++i) {
             bindings[i].buffer = buffers[i];
             bindings[i].offset = 0;
-            bindings[i].range = VK_WHOLE_SIZE; //sizeof(float)*bufferSizes[i];
+            // If size not given, set to whole size of buffer
+            bindings[i].range = bufferSizes.has_value() ? sizeof(float)*bufferSizes.value()[i] : VK_WHOLE_SIZE;
         }
 
         writeDescriptorSet.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
@@ -277,8 +279,8 @@ void ShaderRunInfo::createCommandBuffer(
     VkPipelineLayout& pipelineLayout,
     float const* pushConstants,
     uint32_t numPushConstants,
-    int const* dims, // [x,y,z],
-    int const* dimLengths // [local_size_x, local_size_y, local_size_z]
+    uint32_t const* dims, // [x,y,z],
+    uint32_t const* dimLengths // [local_size_x, local_size_y, local_size_z]
 ) {
     // Creates command pool
     VkCommandPoolCreateInfo commandPoolCreateInfo = {};
@@ -321,17 +323,17 @@ void ShaderRunInfo::createCommandBuffer(
     }
     
     // std::cout << '(' <<
-    //     (uint32_t)ceil(dims[0] / (float)dimLengths[0]) << ',' <<
-    //     (uint32_t)ceil(dims[1] / (float)dimLengths[1]) << ',' <<
-    //     (uint32_t)ceil(dims[2] / (float)dimLengths[2]) << ')' << 
+    //     ceil(dims[0] / static_cast<float>(dimLengths[0])) << ',' <<
+    //     ceil(dims[1] / static_cast<float>(dimLengths[1])) << ',' <<
+    //     ceil(dims[2] / static_cast<float>(dimLengths[2])) << ')' << 
     //     std::endl << std::endl;
 
     // Sets invocations
     vkCmdDispatch(
         *commandBuffer,
-        (uint32_t) ceil(dims[0] / (float) dimLengths[0]),
-        (uint32_t) ceil(dims[1] / (float) dimLengths[1]),
-        (uint32_t) ceil(dims[2] / (float) dimLengths[2])
+        ceil(dims[0] / static_cast<float>(dimLengths[0])),
+        ceil(dims[1] / static_cast<float>(dimLengths[1])),
+        ceil(dims[2] / static_cast<float>(dimLengths[2]))
     );
 
     // End recording commands
@@ -390,6 +392,7 @@ void ComputeApp::shrink(
     for(uint32_t i=0;i<segments;++i) {
         floats[i] = floats[i*stride];
     }
+    vkUnmapMemory(device, bufferMemory);
 }
 
 float* ComputeApp::map(
@@ -427,8 +430,8 @@ ComputeApp::ComputeApp(
     float**& bufferData,
     float* pushConstants,
     uint32_t numPushConstants,
-    int const* dims, // [x,y,z],
-    int const* dimLengths, // [local_size_x, local_size_y, local_size_z]
+    uint32_t const* dims, // [x,y,z],
+    uint32_t const* dimLengths, // [local_size_x, local_size_y, local_size_z]
     bool requiresAtomic,
     std::optional<Reduction> reduction
 ) {
@@ -470,12 +473,12 @@ ComputeApp::ComputeApp(
         this->queueFamilyIndex,
         this->queue,
         shaderFile,
-        bufferSizes,
         numBuffers,
         pushConstants,
         numPushConstants,
         dims, // [x,y,z],
-        dimLengths // [local_size_x, local_size_y, local_size_z]
+        dimLengths, // [local_size_x, local_size_y, local_size_z]
+        bufferSizes // TODO
     );
 
     // if (reduction.has_value()) {

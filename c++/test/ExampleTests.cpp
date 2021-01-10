@@ -7,6 +7,8 @@
 
 const uint32_t RAND_RUNS = 1;
 
+const uint32_t WORKGROUP_SIZE = 1024;
+
 const uint32_t MAX_SIZE = 1000000;
 const uint32_t MIN_SIZE = 100000;
 
@@ -25,8 +27,8 @@ TEST(SSCAL, one) {
         data, // Buffer data
         new float[1]{ 1 }, // Push constants
         1, // Number of push constants
-        new int[3]{ 10,1,1 }, // Invocations
-        new int[3]{ 1024,1,1 }, // Workgroup sizes
+        new uint32_t[3]{ size,1,1 }, // Invocations
+        new uint32_t[3]{ WORKGROUP_SIZE,1,1 }, // Workgroup sizes
         false
     );
 
@@ -48,8 +50,8 @@ TEST(SSCAL, two) {
         data, // Buffer data
         new float[1]{ 2 }, // Push constants
         1, // Number of push constants
-        new int[3]{ 10,1,1 }, // Invocations
-        new int[3]{ 1024,1,1 }, // Workgroup sizes
+        new uint32_t[3]{ size,1,1 }, // Invocations
+        new uint32_t[3]{ WORKGROUP_SIZE,1,1 }, // Workgroup sizes
         false
     );
 
@@ -82,8 +84,8 @@ TEST(SSCAL, random) {
             data, // Buffer data
             new float[1]{ push_constant }, // Push constants
             1, // Number of push constants
-            new int[3]{ static_cast<int>(size),1,1 }, // Invocations
-            new int[3]{ 1024,1,1 }, // Workgroup sizes
+            new uint32_t[3]{ size,1,1 }, // Invocations
+            new uint32_t[3]{ WORKGROUP_SIZE,1,1 }, // Workgroup sizes
             false
         );
 
@@ -109,8 +111,8 @@ TEST(SAXPY, one) {
         data, // Buffer data
         new float[1]{ 1 }, // Push constants
         1, // Number of push constants
-        new int[3]{ 10,1,1 }, // Invocations
-        new int[3]{ 1024,1,1 }, // Workgroup sizes
+        new uint32_t[3]{ size,1,1 }, // Invocations
+        new uint32_t[3]{ WORKGROUP_SIZE,1,1 }, // Workgroup sizes
         false
     );
 
@@ -134,8 +136,8 @@ TEST(SAXPY, two) {
         data, // Buffer data
         new float[1]{ 2 }, // Push constants
         1, // Number of push constants
-        new int[3]{ 10,1,1 }, // Invocations
-        new int[3]{ 1024,1,1 }, // Workgroup sizes
+        new uint32_t[3]{ size,1,1 }, // Invocations
+        new uint32_t[3]{ WORKGROUP_SIZE,1,1 }, // Workgroup sizes
         false
     );
 
@@ -171,8 +173,8 @@ TEST(SAXPY, random) {
             data, // Buffer data
             new float[1]{ push_constant }, // Push constants
             1, // Number of push constants
-            new int[3]{ static_cast<int>(size),1,1 }, // Invocations
-            new int[3]{ 1024,1,1 }, // Workgroup sizes
+            new uint32_t[3]{ size,1,1 }, // Invocations
+            new uint32_t[3]{ WORKGROUP_SIZE,1,1 }, // Workgroup sizes
             false
         );
 
@@ -201,9 +203,40 @@ TEST(SDOT, DISABLED_one) {
         data, // Buffer data
         new float[0]{}, // Push constants
         0, // Number of push constants
-        new int[3]{ 10,1,1 }, // Invocations
-        new int[3]{ 1024,1,1 }, // Workgroup sizes
+        new uint32_t[3]{ size,1,1 }, // Invocations
+        new uint32_t[3]{ WORKGROUP_SIZE,1,1 }, // Workgroup sizes
         true // Requires atomic float
+    );
+
+    // Checking
+    float* out = ComputeApp::map(app.device,app.bufferMemories[2]);
+    float sum = 0;
+    for(uint32_t i=0;i<size;++i) {
+        sum += data[0][i]*data[1][i];
+    }
+    ASSERT_EQ(*out,sum);
+}
+
+TEST(SDOT_PARTIAL, one) {
+    uint32_t size = 10;
+    uint32_t workgroups = ceil(size / static_cast<float>(WORKGROUP_SIZE));
+
+    float** data = new float*[2];
+    data[0] = new float[size]{ 1,2,3,4,5,5,4,3,2,1 };
+    data[1] = new float[size]{ 9,8,7,6,5,4,3,2,1,0 };
+    data[2] = new float[workgroups];
+
+    char shader[] = "../../../glsl/sdot_partial.spv";
+    ComputeApp app = ComputeApp(
+        shader,
+        new uint32_t[3]{ size, size, workgroups }, // Buffer sizes
+        3, //  Number of buffers
+        data, // Buffer data
+        new float[0]{}, // Push constants
+        0, // Number of push constants
+        new uint32_t[3]{ size,1,1 }, // Invocations
+        new uint32_t[3]{ WORKGROUP_SIZE,1,1 }, // Workgroup sizes
+        false // Requires atomic float
     );
 
     // Checking

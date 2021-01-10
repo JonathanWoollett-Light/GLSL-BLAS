@@ -38,6 +38,6 @@ void main() {
         float s_max = gl_SubgroupInvocationID < gl_NumSubgroups ? sdata[gl_SubgroupInvocationID] : neg_inf;
         
         // For the invocation in the subgroup representing the max subgroup value within the workgroup:
-        if (s_max == subgroupMax(s_max)) indx_max[gl_WorkGroupID] = indx;
+        if (s_max == subgroupMax(s_max)) indx_max[gl_WorkGroupID.x] = indx;
     }
 }

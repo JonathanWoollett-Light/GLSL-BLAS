@@ -49,5 +49,5 @@ void main() {
         sum = subgroupAdd(sum); 
     }
     // For 1 invocation in the workgroup, add the workgroup sum to the total sum
-    if (gl_LocalInvocationID.x == 0) total[gl_WorkGroupID] = sum;
+    if (gl_LocalInvocationID.x == 0) total[gl_WorkGroupID.x] = sum;
 }

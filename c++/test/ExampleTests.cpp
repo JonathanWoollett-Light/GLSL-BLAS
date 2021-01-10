@@ -346,3 +346,41 @@ TEST(SDOT_PARTIAL, two) {
     float* out = ComputeApp::map(app.device,app.bufferMemories[2]);
     ASSERT_EQ(*out,size*2);
 }
+
+// Doesn't work, I beleive due to size
+// Constant values requiring 3 applications of the partial extension shader
+TEST(SDOT_PARTIAL, DISABLED_three) {
+    uint32_t size = WORKGROUP_SIZE*WORKGROUP_SIZE*WORKGROUP_SIZE+1; //1024*1024+1
+    uint32_t workgroups = ceil(size / static_cast<float>(WORKGROUP_SIZE));
+
+    float** data = new float*[3];
+    data[0] = new float[size];
+    data[1] = new float[size];
+    data[2] = new float[workgroups];
+
+    for(uint32_t j=0;j<size;++j) {
+        data[0][j] = 1;
+        data[1][j] = 2;
+    }
+
+    char shader[] = "../../../glsl/sdot_partial.spv";
+    ComputeApp app = ComputeApp(
+        shader,
+        new uint32_t[3]{ size, size, workgroups }, // Buffer sizes
+        3, //  Number of buffers
+        data, // Buffer data
+        new float[0]{}, // Push constants
+        0, // Number of push constants
+        new uint32_t[3]{ size,1,1 }, // Invocations
+        new uint32_t[3]{ WORKGROUP_SIZE,1,1 }, // Workgroup sizes
+        false, // Requires atomic float
+        true
+    );
+
+    // ComputeApp::print(app.device,app.bufferMemories[2],workgroups);
+    // ASSERT_EQ(false,true);
+
+    // Checking
+    float* out = ComputeApp::map(app.device,app.bufferMemories[2]);
+    ASSERT_EQ(*out,size*2);
+}

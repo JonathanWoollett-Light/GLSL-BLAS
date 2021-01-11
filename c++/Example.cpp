@@ -504,15 +504,12 @@ ComputeApp::ComputeApp(
 
         for(uint32_t i=0;i<this->numReductions;++i) { // `i<reductions==dims[0] > dimLengths[0]`
             uint32_t newNumInvocations = ceil(dims[0] / static_cast<float>(dimLengths[0]));
-            uint32_t clear_stop = i==0 ? newNumInvocations : 1024*static_cast<uint32_t>(ceil(newNumInvocations/1024.0)); // If first reduction set stop to end of buffer
 
             dims[0] = newNumInvocations;
             bufferSizes[0] = newNumInvocations;
-            //std::cout << "newNumInvocations: " << newNumInvocations << std::endl;
-            //std::cout << "clear_stop: " << clear_stop << std::endl;
 
-            clear(device,bufferMemories[2],newNumInvocations,clear_stop);
-            //print(device,bufferMemories[2],newNumInvocations);
+            // std::cout << "newNumInvocations: " << newNumInvocations << std::endl;
+            // print(device,bufferMemories[2],newNumInvocations);
             
             this->reductionShaderInfo[i] = ShaderRunInfo(
                 this->device,

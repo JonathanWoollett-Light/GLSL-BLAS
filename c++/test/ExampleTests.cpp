@@ -5,6 +5,8 @@
 #include <cstdlib>
 #include <ctime>
 
+#include <chrono> // Time tests
+
 const uint32_t RAND_RUNS = 1;
 
 const uint32_t WORKGROUP_SIZE = 1024;
@@ -284,6 +286,7 @@ TEST(SDOT_PARTIAL, random_one) {
             data[1][j] = float(rand())/float(RAND_MAX);
         }
 
+        //auto start = std::chrono::high_resolution_clock::now();
         char shader[] = "../../../glsl/sdot_partial.spv";
         ComputeApp app = ComputeApp(
             shader,
@@ -297,16 +300,24 @@ TEST(SDOT_PARTIAL, random_one) {
             false, // Requires atomic float
             true
         );
+        auto gpu_duration = std::chrono::duration_cast<std::chrono::microseconds>(std::chrono::high_resolution_clock::now()-start);
 
         // ComputeApp::print(app.device,app.bufferMemories[2],workgroups);
         // ASSERT_EQ(false,true);
 
         // Checking
         float* out = ComputeApp::map(app.device,app.bufferMemories[2]);
+
+        //start = std::chrono::high_resolution_clock::now();
         float sum = 0;
         for(uint32_t i=0;i<size;++i) {
             sum += data[0][i]*data[1][i];
         }
+
+        // auto cpu_duration = std::chrono::duration_cast<std::chrono::microseconds>(std::chrono::high_resolution_clock::now()-start);
+        // std::cout << "gpu: " << gpu_duration.count() << "cpu: " << cpu_duration.count() << std::endl;
+        // ASSERT_LT(gpu_duration,cpu_duration);
+        
         ASSERT_NEAR(*out,sum,EPSILON);
     }
 }
@@ -346,7 +357,6 @@ TEST(SDOT_PARTIAL, two) {
     float* out = ComputeApp::map(app.device,app.bufferMemories[2]);
     ASSERT_EQ(*out,size*2);
 }
-
 // Doesn't work, I beleive due to size
 // Constant values requiring 3 applications of the partial extension shader
 TEST(SDOT_PARTIAL, DISABLED_three) {

@@ -24,7 +24,7 @@ shared float sdata[sumSubGroupSize];
 
 void main() {
     uint indx = gl_GlobalInvocationID.x;
-    float sum = total[gl_GlobalInvocationID.x]; // x ⊙ j (vector dot product = matrix hadamard product + summation)
+    float sum = total[indx]; // x ⊙ j (vector dot product = matrix hadamard product + summation)
 
     sum = subgroupAdd(sum);
 
@@ -39,4 +39,5 @@ void main() {
     
     // For 1 invocation in the workgroup, the workgroup
     if (gl_LocalInvocationID.x == 0) total[gl_WorkGroupID.x] = sum;
+    else total[indx] = 0;
 }

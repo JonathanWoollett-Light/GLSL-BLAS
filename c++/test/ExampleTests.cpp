@@ -300,7 +300,7 @@ TEST(SDOT_PARTIAL, random_one) {
             false, // Requires atomic float
             true
         );
-        auto gpu_duration = std::chrono::duration_cast<std::chrono::microseconds>(std::chrono::high_resolution_clock::now()-start);
+        //auto gpu_duration = std::chrono::duration_cast<std::chrono::microseconds>(std::chrono::high_resolution_clock::now()-start);
 
         // ComputeApp::print(app.device,app.bufferMemories[2],workgroups);
         // ASSERT_EQ(false,true);

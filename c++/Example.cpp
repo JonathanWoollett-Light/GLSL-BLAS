@@ -473,7 +473,7 @@ ComputeApp::ComputeApp(
     createDevice(this->physicalDevice, this->queueFamilyIndex, this->device, this->queue);
 
     // Creates buffers
-    createBuffers(this->device, bufferSizes, numBuffers, this->buffers, this->bufferMemories);
+    createBuffers(this->physicalDevice, this->device, bufferSizes, numBuffers, this->buffers, this->bufferMemories);
 
     // Fills buffers
     fillBuffers(this->device, bufferData, this->bufferMemories, numBuffers, bufferSizes);
@@ -691,15 +691,16 @@ void ComputeApp::createDevice(
     vkGetDeviceQueue(device, queueFamilyIndex, 0, &queue);
 }
 
-// Findsmemory type with given properties
-uint32_t ComputeApp::findMemoryType(uint32_t const memoryTypeBits, VkMemoryPropertyFlags const properties) {
+// Finds memory type with given properties
+uint32_t ComputeApp::findMemoryType(VkPhysicalDevice const& physicalDevice, uint32_t const memoryTypeBits, VkMemoryPropertyFlags const properties) {
     VkPhysicalDeviceMemoryProperties memoryProperties;
     vkGetPhysicalDeviceMemoryProperties(physicalDevice, &memoryProperties);
 
-    /*
-    How does this search work?
-    See the documentation of VkPhysicalDeviceMemoryProperties for a detailed description. 
-    */
+    // We iterate through the memory types we can allocate from heaps of this physical device
+
+   // `memoryProperties.memoryType` is an array of `VkMemorytype`s
+   //  describing the memory types that can be used to access memory
+   //  allocated from the heaps specified by `memoryHeaps`
     for (uint32_t i = 0; i < memoryProperties.memoryTypeCount; ++i) {
         if ((memoryTypeBits & (1 << i)) &&
             ((memoryProperties.memoryTypes[i].propertyFlags & properties) == properties))
@@ -710,6 +711,7 @@ uint32_t ComputeApp::findMemoryType(uint32_t const memoryTypeBits, VkMemoryPrope
 
 // Creates buffer
 void ComputeApp::createBuffer(
+    VkPhysicalDevice const& physicalDevice,
     VkDevice const& device,
     uint32_t const size,
     VkBuffer* buffer,
@@ -738,6 +740,7 @@ void ComputeApp::createBuffer(
     allocateInfo.allocationSize = memoryRequirements.size; // Bytes
 
     allocateInfo.memoryTypeIndex = findMemoryType(
+        physicalDevice,
         // Sets memory must supports all the operations our buffer memory supports
         memoryRequirements.memoryTypeBits,
         // Sets memory must have the properties:
@@ -755,6 +758,7 @@ void ComputeApp::createBuffer(
 
 // Creates buffers
 void ComputeApp::createBuffers(
+    VkPhysicalDevice const& physicalDevice,
     VkDevice const & device,
     uint32_t const* bufferSizes,
     uint32_t const numBuffers,
@@ -764,7 +768,7 @@ void ComputeApp::createBuffers(
     buffers = new VkBuffer[numBuffers];
     bufferMemories = new VkDeviceMemory[numBuffers];
     for (uint32_t i = 0; i < numBuffers; ++i) {
-        createBuffer(device, bufferSizes[i], &buffers[i], &bufferMemories[i]);
+        createBuffer(physicalDevice,device, bufferSizes[i], &buffers[i], &bufferMemories[i]);
     }
 }
 

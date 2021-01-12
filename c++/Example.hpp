@@ -183,13 +183,13 @@ class ComputeApp {
     // Private methods
     // --------------------------------------------------
     private:
-        // Gets Vulkan instance
+        // Creates Vulkan instance
         void createInstance(VkInstance& instance, bool const requiresAtomic);
         
         // Gets physical device
         void getPhysicalDevice(VkInstance const& instance, VkPhysicalDevice& physicalDevice);
 
-        // Gets index of 1st queue family which supports compute
+        // Gets index to 1st queue family which supports compute
         uint32_t getComputeQueueFamilyIndex();
         // Creates logical device
         void createDevice(
@@ -200,10 +200,11 @@ class ComputeApp {
         );
 
         // Finds memory type with given properties
-        uint32_t findMemoryType(uint32_t const memoryTypeBits, VkMemoryPropertyFlags const properties);
+        uint32_t findMemoryType(VkPhysicalDevice const& physicalDevice,uint32_t const memoryTypeBits, VkMemoryPropertyFlags const properties);
 
         // Creates buffer
         void createBuffer(
+            VkPhysicalDevice const& physicalDevice,
             VkDevice const& device,
             uint32_t const size,
             VkBuffer* buffer,
@@ -212,6 +213,7 @@ class ComputeApp {
 
         // Creates buffers
         void createBuffers(
+            VkPhysicalDevice const& physicalDevice,
             VkDevice const& device,
             uint32_t const* bufferSizes,
             uint32_t const numBuffers,

@@ -143,19 +143,6 @@ class ComputeApp {
         ShaderRunInfo baseShaderRunInfo;
         ShaderRunInfo* reductionShaderInfo;
 
-        // VkDescriptorSetLayout descriptorSetLayout;
-        // VkDescriptorPool descriptorPool;
-
-        // VkDescriptorSet descriptorSet;
-
-        // VkShaderModule computeShaderModule;
-
-        // VkPipelineLayout pipelineLayout;
-        // VkPipeline pipeline;
-
-        // VkCommandPool commandPool;
-        // VkCommandBuffer commandBuffer;
-
         uint32_t numBuffers; // neccessary for destruction
         uint32_t numReductions; //neccessary for destruction
 
@@ -164,7 +151,7 @@ class ComputeApp {
     // --------------------------------------------------
     public:
         static void shrink(
-            VkDevice& device, 
+            VkDevice& device,
             VkDeviceMemory& bufferMemory,
             uint32_t const size,
             uint32_t const stride,

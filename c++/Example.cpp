@@ -435,9 +435,9 @@ void ComputeApp::print(
 }
 
 ComputeApp::ComputeApp(
-    char* shaderFile,
+    char const* shaderFile,
     uint32_t* bufferSizes,
-    uint32_t numBuffers,
+    uint32_t const numBuffers,
     float**& bufferData,
     float* pushConstants,
     uint32_t numPushConstants,

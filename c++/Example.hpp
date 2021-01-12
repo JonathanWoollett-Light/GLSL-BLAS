@@ -180,9 +180,9 @@ class ComputeApp {
         static void print(VkDevice& device,VkDeviceMemory& bufferMemory, uint32_t size);
 
         ComputeApp(
-            char* shaderFile,
+            char const* shaderFile,
             uint32_t* bufferSizes,
-            uint32_t numBuffers,
+            uint32_t const numBuffers,
             float**& bufferData,
             float* pushConstants,
             uint32_t numPushConstants,

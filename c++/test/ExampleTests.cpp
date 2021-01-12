@@ -22,7 +22,7 @@ TEST(SSCAL, one) {
     uint32_t size = 10;
     float** data = new float*[1];
     data[0] = new float[size]{ 1,2,3,4,5,5,4,3,2,1 };
-    char shader[] = "../../../glsl/sscal.spv";
+    char const shader[] = "../../../glsl/sscal.spv";
     ComputeApp app = ComputeApp(
         shader,
         new uint32_t[1]{ size }, // Buffer sizes
@@ -46,7 +46,7 @@ TEST(SSCAL, two) {
     uint32_t size = 10;
     float** data = new float*[1];
     data[0] = new float[size]{ 1,2,3,4,5,5,4,3,2,1 };
-    char shader[] = "../../../glsl/sscal.spv";
+    char const shader[] = "../../../glsl/sscal.spv";
     ComputeApp app = ComputeApp(
         shader,
         new uint32_t[1]{ size }, // Buffer sizes
@@ -81,7 +81,7 @@ TEST(SSCAL, random) {
         }
 
         float push_constant = float(rand())/float(RAND_MAX);
-        char shader[] = "../../../glsl/sscal.spv";
+        char const shader[] = "../../../glsl/sscal.spv";
         ComputeApp app = ComputeApp(
             shader,
             new uint32_t[1]{ size }, // Buffer sizes
@@ -109,7 +109,7 @@ TEST(SAXPY, one) {
     data[0] = new float[size]{ 1,2,3,4,5,5,4,3,2,1 };
     data[1] = new float[size]{ 9,8,7,6,5,4,3,2,1,0 };
 
-    char shader[] = "../../../glsl/saxpy.spv";
+    char const shader[] = "../../../glsl/saxpy.spv";
     ComputeApp app = ComputeApp(
         shader,
         new uint32_t[2]{ size, size }, // Buffer sizes
@@ -135,7 +135,7 @@ TEST(SAXPY, two) {
     data[0] = new float[size]{ 1,2,3,4,5,5,4,3,2,1 };
     data[1] = new float[size]{ 9,8,7,6,5,4,3,2,1,0 };
 
-    char shader[] = "../../../glsl/saxpy.spv";
+    char const shader[] = "../../../glsl/saxpy.spv";
     ComputeApp app = ComputeApp(
         shader,
         new uint32_t[2]{ size, size }, // Buffer sizes
@@ -173,7 +173,7 @@ TEST(SAXPY, random) {
 
         float push_constant = float(rand())/float(RAND_MAX);
 
-        char shader[] = "../../../glsl/saxpy.spv";
+        char const shader[] = "../../../glsl/saxpy.spv";
         ComputeApp app = ComputeApp(
             shader,
             new uint32_t[2]{ size, size }, // Buffer sizes
@@ -204,7 +204,7 @@ TEST(SDOT, DISABLED_one) {
     data[1] = new float[size]{ 9,8,7,6,5,4,3,2,1,0 };
     data[2] = new float[1]{ 0 };
 
-    char shader[] = "../../../glsl/sdot.spv";
+    char const shader[] = "../../../glsl/sdot.spv";
     ComputeApp app = ComputeApp(
         shader,
         new uint32_t[3]{ size, size, 1 }, // Buffer sizes
@@ -242,7 +242,7 @@ TEST(SDOT_PARTIAL, one) {
         data[1][j] = 2;
     }
 
-    char shader[] = "../../../glsl/sdot_partial.spv";
+    char const shader[] = "../../../glsl/sdot_partial.spv";
     ComputeApp app = ComputeApp(
         shader,
         new uint32_t[3]{ size, size, workgroups }, // Buffer sizes
@@ -284,7 +284,7 @@ TEST(SDOT_PARTIAL, random_one) {
         }
 
         //auto start = std::chrono::high_resolution_clock::now();
-        char shader[] = "../../../glsl/sdot_partial.spv";
+        char const shader[] = "../../../glsl/sdot_partial.spv";
         ComputeApp app = ComputeApp(
             shader,
             new uint32_t[3]{ size, size, workgroups }, // Buffer sizes
@@ -333,7 +333,7 @@ TEST(SDOT_PARTIAL, two) {
         data[1][j] = 2;
     }
 
-    char shader[] = "../../../glsl/sdot_partial.spv";
+    char const shader[] = "../../../glsl/sdot_partial.spv";
     ComputeApp app = ComputeApp(
         shader,
         new uint32_t[3]{ size, size, workgroups }, // Buffer sizes
@@ -370,7 +370,7 @@ TEST(SDOT_PARTIAL, DISABLED_three) {
         data[1][j] = 2;
     }
 
-    char shader[] = "../../../glsl/sdot_partial.spv";
+    char const shader[] = "../../../glsl/sdot_partial.spv";
     ComputeApp app = ComputeApp(
         shader,
         new uint32_t[3]{ size, size, workgroups }, // Buffer sizes

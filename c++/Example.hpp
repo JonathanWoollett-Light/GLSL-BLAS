@@ -192,7 +192,7 @@ class ComputeApp {
         // Gets index of 1st queue family which supports compute
         uint32_t getComputeQueueFamilyIndex();
         // Creates logical device
-        void createDevice(
+        void createLogicalDevice(
             VkPhysicalDevice const& physicalDevice,
             uint32_t& queueFamilyIndex,
             VkDevice& device,
@@ -227,9 +227,7 @@ class ComputeApp {
             VkDeviceMemory*& bufferMemories,
             uint32_t const numBuffers,
             uint32_t const* bufferSizes
-        );
-
-        
+        );  
 };
 
 int TwentyOne();

@@ -470,7 +470,7 @@ ComputeApp::ComputeApp(
     getPhysicalDevice(this->instance, this->physicalDevice);
 
     // Gets logical device
-    createDevice(this->physicalDevice, this->queueFamilyIndex, this->device, this->queue);
+    createLogicalDevice(this->physicalDevice, this->queueFamilyIndex, this->device, this->queue);
 
     // Creates buffers
     createBuffers(this->device, bufferSizes, numBuffers, this->buffers, this->bufferMemories);
@@ -658,7 +658,7 @@ uint32_t ComputeApp::getComputeQueueFamilyIndex() {
 }
 
 // Creates logical device
-void ComputeApp::createDevice(
+void ComputeApp::createLogicalDevice(
     VkPhysicalDevice const& physicalDevice,
     uint32_t& queueFamilyIndex,
     VkDevice& device,

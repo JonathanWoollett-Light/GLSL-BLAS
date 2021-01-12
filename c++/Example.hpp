@@ -1,6 +1,4 @@
-#ifndef EXAMPLE_HPP
-#define EXAMPLE_HPP
-#endif
+#pragma once
 
 #include <vulkan/vulkan.h> // Vulkan
 #include <vector> // vector

@@ -18,9 +18,6 @@ const uint32_t MIN_SIZE = 100000;
 //  Also maybe use percentage difference instead.
 const float EPSILON = 0.1;
 
-// TEST(Sanity, one) { EXPECT_EQ(TwentyOne(),21); }
-
-
 TEST(SSCAL, one) {
     uint32_t size = 10;
     float** data = new float*[1];

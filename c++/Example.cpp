@@ -812,7 +812,3 @@ ComputeApp::~ComputeApp() {
     vkDestroyDevice(device, nullptr);
     vkDestroyInstance(instance, nullptr);		
 }
-
-// --------------------------------------------------
-
-int TwentyOne() { return 21; }

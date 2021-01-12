@@ -714,8 +714,8 @@ void ComputeApp::createBuffer(
     VkPhysicalDevice const& physicalDevice,
     VkDevice const& device,
     uint32_t const size,
-    VkBuffer* buffer,
-    VkDeviceMemory* bufferMemory
+    VkBuffer* const buffer,
+    VkDeviceMemory* const bufferMemory
 ) {
     // Buffer info
     VkBufferCreateInfo bufferCreateInfo = {};

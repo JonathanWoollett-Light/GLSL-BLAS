@@ -207,8 +207,8 @@ class ComputeApp {
             VkPhysicalDevice const& physicalDevice,
             VkDevice const& device,
             uint32_t const size,
-            VkBuffer* buffer,
-            VkDeviceMemory* bufferMemory
+            VkBuffer* const buffer,
+            VkDeviceMemory* const bufferMemory
         );
 
         // Creates buffers
@@ -230,6 +230,4 @@ class ComputeApp {
             uint32_t const numBuffers,
             uint32_t const* bufferSizes
         );
-
-        
 };

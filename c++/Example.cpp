@@ -58,8 +58,8 @@ ShaderRunInfo::ShaderRunInfo(
 
 // Creates descriptor set layout
 void ShaderRunInfo::createDescriptorSetLayout(
-    VkDevice& device,
-    uint32_t numBuffers,
+    VkDevice const& device,
+    uint32_t const numBuffers,
     VkDescriptorSetLayout* descriptorSetLayout
 ) {
     // Descriptor set layout options
@@ -84,8 +84,8 @@ void ShaderRunInfo::createDescriptorSetLayout(
 
 // Creates descriptor set
 void ShaderRunInfo::createDescriptorSet(
-    VkDevice& device,
-    uint32_t storageBuffers,
+    VkDevice const& device,
+    uint32_t const storageBuffers,
     VkDescriptorPool* descriptorPool,
     VkDescriptorSetLayout* descriptorSetLayout,
     VkBuffer* buffers,
@@ -158,7 +158,7 @@ void ShaderRunInfo::createDescriptorSet(
 }
 
 // Reads shader file
-uint32_t* ShaderRunInfo::readShader(uint32_t& length, const char* filename) {
+uint32_t* ShaderRunInfo::readShader(uint32_t& length, char const* filename) {
     // std::string path = "../../../";
     // std::cout << "paths:" << std::endl;
     // for (const auto & entry : std::filesystem::directory_iterator(path)) {
@@ -196,14 +196,14 @@ uint32_t* ShaderRunInfo::readShader(uint32_t& length, const char* filename) {
 
 // Creates compute pipeline
 void ShaderRunInfo::createComputePipeline(
-    VkDevice& device,
+    VkDevice const& device,
     char const* shaderFile,
     VkShaderModule* computeShaderModule,
     VkDescriptorSetLayout* descriptorSetLayout,
     VkPipelineLayout* pipelineLayout,
     VkPipeline* pipeline,
     float const* pushConstants,
-    uint32_t numPushConstants
+    uint32_t const numPushConstants
 ) {
     // Creates shader module (just a wrapper around our shader)
     VkShaderModuleCreateInfo createInfo = {};
@@ -278,7 +278,7 @@ void ShaderRunInfo::createCommandBuffer(
     VkPipeline& pipeline,
     VkPipelineLayout& pipelineLayout,
     float const* pushConstants,
-    uint32_t numPushConstants,
+    uint32_t const numPushConstants,
     uint32_t const* dims, // [x,y,z],
     uint32_t const* dimLengths // [local_size_x, local_size_y, local_size_z]
 ) {
@@ -343,8 +343,8 @@ void ShaderRunInfo::createCommandBuffer(
 // Runs command buffer
 void ShaderRunInfo::runCommandBuffer(
     VkCommandBuffer* commandBuffer,
-    VkDevice& device,
-    VkQueue& queue
+    VkDevice const& device,
+    VkQueue const& queue
 ) {
     VkSubmitInfo submitInfo = {};
     {

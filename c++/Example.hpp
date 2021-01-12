@@ -197,37 +197,37 @@ class ComputeApp {
     // --------------------------------------------------
     private:
         // Gets Vulkan instance
-        void createInstance(VkInstance& instance, bool requiresAtomic);
+        void createInstance(VkInstance& instance, bool const requiresAtomic);
         
         // Gets physical device
-        void getPhysicalDevice(VkInstance& instance, VkPhysicalDevice& physicalDevice);
+        void getPhysicalDevice(VkInstance const& instance, VkPhysicalDevice& physicalDevice);
 
         // Gets index of 1st queue family which supports compute
         uint32_t getComputeQueueFamilyIndex();
         // Creates logical device
         void createDevice(
-            VkPhysicalDevice& physicalDevice,
+            VkPhysicalDevice const& physicalDevice,
             uint32_t& queueFamilyIndex,
             VkDevice& device,
             VkQueue& queue
         );
 
-        // Findsmemory type with given properties
-        uint32_t findMemoryType(uint32_t memoryTypeBits, VkMemoryPropertyFlags properties);
+        // Finds memory type with given properties
+        uint32_t findMemoryType(uint32_t const memoryTypeBits, VkMemoryPropertyFlags const properties);
 
         // Creates buffer
         void createBuffer(
-            VkDevice& device,
-            uint32_t size,
+            VkDevice const& device,
+            uint32_t const size,
             VkBuffer* buffer,
             VkDeviceMemory* bufferMemory
         );
 
         // Creates buffers
         void createBuffers(
-            VkDevice& device,
+            VkDevice const& device,
             uint32_t const* bufferSizes,
-            uint32_t numBuffers,
+            uint32_t const numBuffers,
             VkBuffer*& buffers,
             VkDeviceMemory*& bufferMemories
         );
@@ -235,10 +235,10 @@ class ComputeApp {
         // Fills buffers with data
         // Must be after `createBuffers` but before `createComputePipeline`
         void fillBuffers(
-            VkDevice& device,
+            VkDevice const & device,
             float**& bufferData,
             VkDeviceMemory*& bufferMemories,
-            uint32_t numBuffers,
+            uint32_t const numBuffers,
             uint32_t const* bufferSizes
         );
 

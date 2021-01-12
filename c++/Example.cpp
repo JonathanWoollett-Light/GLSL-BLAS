@@ -529,7 +529,7 @@ ComputeApp::ComputeApp(
 }
 
 // Gets Vulkan instance
-void ComputeApp::createInstance(VkInstance& instance, bool requiresAtomic) {
+void ComputeApp::createInstance(VkInstance& instance, bool const requiresAtomic) {
     std::vector<char const*> enabledLayers;
     std::vector<char const*> enabledExtensions;
 
@@ -612,7 +612,7 @@ void ComputeApp::createInstance(VkInstance& instance, bool requiresAtomic) {
 }
 
 // Gets physical device
-void ComputeApp::getPhysicalDevice(VkInstance& instance, VkPhysicalDevice& physicalDevice) {
+void ComputeApp::getPhysicalDevice(VkInstance const& instance, VkPhysicalDevice& physicalDevice) {
     // Gets number of physical devices
     uint32_t deviceCount;
     vkEnumeratePhysicalDevices(instance, &deviceCount, nullptr);
@@ -659,7 +659,7 @@ uint32_t ComputeApp::getComputeQueueFamilyIndex() {
 
 // Creates logical device
 void ComputeApp::createDevice(
-    VkPhysicalDevice& physicalDevice,
+    VkPhysicalDevice const& physicalDevice,
     uint32_t& queueFamilyIndex,
     VkDevice& device,
     VkQueue& queue
@@ -692,7 +692,7 @@ void ComputeApp::createDevice(
 }
 
 // Findsmemory type with given properties
-uint32_t ComputeApp::findMemoryType(uint32_t memoryTypeBits, VkMemoryPropertyFlags properties) {
+uint32_t ComputeApp::findMemoryType(uint32_t const memoryTypeBits, VkMemoryPropertyFlags const properties) {
     VkPhysicalDeviceMemoryProperties memoryProperties;
     vkGetPhysicalDeviceMemoryProperties(physicalDevice, &memoryProperties);
 
@@ -710,8 +710,8 @@ uint32_t ComputeApp::findMemoryType(uint32_t memoryTypeBits, VkMemoryPropertyFla
 
 // Creates buffer
 void ComputeApp::createBuffer(
-    VkDevice& device,
-    uint32_t size,
+    VkDevice const& device,
+    uint32_t const size,
     VkBuffer* buffer,
     VkDeviceMemory* bufferMemory
 ) {
@@ -755,9 +755,9 @@ void ComputeApp::createBuffer(
 
 // Creates buffers
 void ComputeApp::createBuffers(
-    VkDevice& device,
+    VkDevice const & device,
     uint32_t const* bufferSizes,
-    uint32_t numBuffers,
+    uint32_t const numBuffers,
     VkBuffer*& buffers,
     VkDeviceMemory*& bufferMemories
 ) {
@@ -771,10 +771,10 @@ void ComputeApp::createBuffers(
 // Fills buffers with data
 // Must be after `createBuffers` but before `createComputePipeline`
 void ComputeApp::fillBuffers(
-    VkDevice& device,
+    VkDevice const & device,
     float**& bufferData,
     VkDeviceMemory*& bufferMemories,
-    uint32_t numBuffers,
+    uint32_t const numBuffers,
     uint32_t const* bufferSizes
 ) {
     for (uint32_t i = 0; i < numBuffers; ++i) {

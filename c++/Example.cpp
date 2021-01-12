@@ -616,8 +616,8 @@ void ComputeApp::getPhysicalDevice(VkInstance const& instance, VkPhysicalDevice&
     // Gets number of physical devices
     uint32_t deviceCount;
     vkEnumeratePhysicalDevices(instance, &deviceCount, nullptr);
-    // Checks system has a device
-    assert(deviceCount!=0);
+    // Asserts a system has a device
+    assert(deviceCount != 0);
 
     // Gets physical devices
     std::vector<VkPhysicalDevice> devices(deviceCount);
@@ -638,7 +638,7 @@ void ComputeApp::getPhysicalDevice(VkInstance const& instance, VkPhysicalDevice&
 }
 
 // Gets index of 1st queue family which supports compute
-uint32_t ComputeApp::getComputeQueueFamilyIndex() {
+uint32_t ComputeApp::getComputeQueueFamilyIndex(VkPhysicalDevice const& physicalDevice) {
     // Gets number of queue families
     uint32_t queueFamilyCount;
     vkGetPhysicalDeviceQueueFamilyProperties(physicalDevice, &queueFamilyCount, nullptr);
@@ -671,18 +671,14 @@ void ComputeApp::createDevice(
         VkDeviceQueueCreateInfo queueCreateInfo = {};
         {
             queueCreateInfo.sType = VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO;
-            queueFamilyIndex = getComputeQueueFamilyIndex(); // find queue family with compute capability.
+            queueFamilyIndex = getComputeQueueFamilyIndex(physicalDevice); // find queue family with compute capability.
             queueCreateInfo.queueFamilyIndex = queueFamilyIndex;
             queueCreateInfo.queueCount = 1; // create one queue in this family. We don't need more.
             queueCreateInfo.pQueuePriorities = new float(1.0);
         }
-        // Device features
-        VkPhysicalDeviceFeatures deviceFeatures = {};
-
         deviceCreateInfo.sType = VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO;
         deviceCreateInfo.pQueueCreateInfos = &queueCreateInfo;
         deviceCreateInfo.queueCreateInfoCount = 1;
-        deviceCreateInfo.pEnabledFeatures = &deviceFeatures;
     }
 
     VK_CHECK_RESULT(vkCreateDevice(physicalDevice, &deviceCreateInfo, nullptr, &device)); // create logical device.

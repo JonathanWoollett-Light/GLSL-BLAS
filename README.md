@@ -32,14 +32,5 @@ Sy | Desc
 
 Your GPU likely supports subgroups operations, but likely does not support float atomics ([list of GPUs which support float atomics](https://vulkan.gpuinfo.org/listdevicescoverage.php?extension=VK_EXT_shader_atomic_float)). I am planning procedures for circumstance both with and without support for float atomics.
 
-Library |  `GL_EXT_shader_atomic_float` | `GL_KHR_shader_subgroup_arithmetic`
---- | --- | ---
-[WebGPU](https://github.com/gfx-rs/wgpu) | ❌ | ✔️
-[Vulkano](https://github.com/vulkano-rs/vulkano) | ❌ | ❌
-
 - `GL_EXT_shader_atomic_float`: Inter-workgroup reduction. To return 1 sum, max, etc. instead of 1 for each workgroup.
 - `GL_KHR_shader_subgroup_arithmetic`: Fast intra-workgroup reduction. To get sum, max, etc. within a workgroup quickly.
-
-Both can be worked around, but awkwardly.
-
-Neither are new, code shouldn't need to be made worse due to the lack of support here.

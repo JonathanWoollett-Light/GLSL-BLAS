@@ -1,0 +1,28 @@
+#version 450
+#extension GL_KHR_shader_subgroup_arithmetic : enable
+
+layout(local_size_x = 1024, local_size_y = 1, local_size_z = 1) in;
+
+layout(binding = 0) buffer Buffer0 {
+    float x[];
+};
+layout(binding = 1) buffer Output {
+    float total[]; // total sum
+};
+
+shared float sdata[16]; // gl_WorkGroupSize.x / gl_SubgroupSize.x = 1024 / 64 = 16;
+
+void main() {
+    uint indx = gl_GlobalInvocationID.x;
+    float sum = abs(x[gl_GlobalInvocationID.x]);
+
+    // len(x) -> len(x) / gl_WorkGroupSize.x
+    // ---------------------------
+    if (subgroupElect()) sdata[gl_SubgroupID] = subgroupAdd(sum);
+    barrier();
+
+    if (gl_SubgroupID == 0) {
+        sum = gl_SubgroupInvocationID < gl_NumSubgroups ? sdata[gl_SubgroupInvocationID] : 0;
+    }
+    if (gl_LocalInvocationID.x == 0) total[gl_WorkGroupID.x] = subgroupAdd(sum);
+}

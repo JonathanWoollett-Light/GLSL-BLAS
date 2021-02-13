@@ -18,376 +18,345 @@ const uint32_t MIN_SIZE = 100000;
 //  Also maybe use percentage difference instead.
 const float EPSILON = 0.1;
 
-TEST(SSCAL, one) {
-    uint32_t size = 10;
-    float** data = new float*[1];
-    data[0] = new float[size]{ 1,2,3,4,5,5,4,3,2,1 };
-    char const shader[] = "../../../glsl/sscal.spv";
-    ComputeApp app = ComputeApp(
-        shader,
-        new uint32_t[1]{ size }, // Buffer sizes
-        1, //  Number of buffers
-        data, // Buffer data
-        new float[1]{ 1 }, // Push constants
-        1, // Number of push constants
-        new uint32_t[3]{ size,1,1 }, // Invocations
-        new uint32_t[3]{ WORKGROUP_SIZE,1,1 }, // Workgroup sizes
-        false,
-        false
-    );
+// TEST(SSCAL, one) {
+//     uint32_t size = 10;
+//     float** data = new float*[1];
+//     data[0] = new float[size]{ 0,1,2,3,4,5,6,7,8,9 };
+//     char const shader[] = "../../../glsl/sscal.spv";
+//     ComputeApp app = ComputeApp(
+//         shader,
+//         1, //  Number of buffers
+//         new uint32_t[1]{ size }, // Buffer sizes
+//         data, // Buffer data
+//         1, // Number of push constants
+//         new float[1]{ 1 }, // Push constants
+//         new uint32_t[3]{ size,1,1 }, // Invocations
+//         new uint32_t[3]{ WORKGROUP_SIZE,1,1 } // Workgroup sizes
+//     );
+//     float* out = static_cast<float*>(Utility::map(app.device,app.bufferMemory[0]));
+//     for(uint32_t i = 0; i < size; ++i) {
+//         //std::cout << out[i] << std::endl;
+//         ASSERT_EQ(i,out[i]);
+//     }
+// }
 
-    // Checking
-    float* out = ComputeApp::map(app.device,app.bufferMemories[0]);
-    for(uint32_t i=0;i<size;++i) {
-        EXPECT_EQ(out[i],data[0][i]);
-    }
-}
-TEST(SSCAL, two) {
-    uint32_t size = 10;
-    float** data = new float*[1];
-    data[0] = new float[size]{ 1,2,3,4,5,5,4,3,2,1 };
-    char const shader[] = "../../../glsl/sscal.spv";
-    ComputeApp app = ComputeApp(
-        shader,
-        new uint32_t[1]{ size }, // Buffer sizes
-        1, //  Number of buffers
-        data, // Buffer data
-        new float[1]{ 2 }, // Push constants
-        1, // Number of push constants
-        new uint32_t[3]{ size,1,1 }, // Invocations
-        new uint32_t[3]{ WORKGROUP_SIZE,1,1 }, // Workgroup sizes
-        false,
-        false
-    );
+// TEST(SSCAL, two) {
+//     uint32_t size = 10;
+//     float** data = new float*[1];
+//     data[0] = new float[size]{ 0,1,2,3,4,5,6,7,8,9 };
+//     char const shader[] = "../../../glsl/sscal.spv";
+//     ComputeApp app = ComputeApp(
+//         shader,
+//         1, //  Number of buffers
+//         new uint32_t[1]{ size }, // Buffer sizes
+//         data, // Buffer data
+//         1, // Number of push constants
+//         new float[1]{ 2 }, // Push constants
+//         new uint32_t[3]{ size,1,1 }, // Invocations
+//         new uint32_t[3]{ WORKGROUP_SIZE,1,1 } // Workgroup sizes
+//     );
+//     float* out = static_cast<float*>(Utility::map(app.device,app.bufferMemory[0]));
+//     for(uint32_t i = 0; i < size; ++i) {
+//         //std::cout << out[i] << std::endl;
+//         ASSERT_EQ(2*i,out[i]);
+//     }
+// }
 
-    // Checking
-    float* out = ComputeApp::map(app.device,app.bufferMemories[0]);
-    for(uint32_t i=0;i<size;++i) {
-        EXPECT_EQ(out[i],2*data[0][i]);
-    }
-}
-TEST(SSCAL, random) {
-    srand((unsigned int)time(NULL));
+// TEST(SSCAL, random) {
+//     srand((unsigned int)time(NULL));
+//     for(uint32_t i=0;i<RAND_RUNS;++i) {
 
-    for(uint32_t i=0;i<RAND_RUNS;++i) {
+//         uint32_t size = MIN_SIZE + (rand() % uint32_t(MAX_SIZE - MIN_SIZE + 1));
 
-        uint32_t size = MIN_SIZE + (rand() % uint32_t(MAX_SIZE - MIN_SIZE + 1));
+//         float** data = new float*[1];
+//         data[0] = new float[size];
+//         for(uint32_t j=0;j<size;++j) {
+//             data[0][j] = float(rand())/float(RAND_MAX);
+//         }
 
-        float** data = new float*[1];
-        data[0] = new float[size];
+//         float push_constant = float(rand())/float(RAND_MAX);
 
-        for(uint32_t j=0;j<size;++j) {
-            data[0][j] = float(rand())/float(RAND_MAX);
-        }
+//         char const shader[] = "../../../glsl/sscal.spv";
+//         ComputeApp app = ComputeApp(
+//             shader,
+//             1, //  Number of buffers
+//             new uint32_t[1]{ size }, // Buffer sizes
+//             data, // Buffer data
+//             1, // Number of push constants
+//             new float[1]{ push_constant }, // Push constants
+//             new uint32_t[3]{ size,1,1 }, // Invocations
+//             new uint32_t[3]{ WORKGROUP_SIZE,1,1 } // Workgroup sizes
+//         );
+//         float* out = static_cast<float*>(Utility::map(app.device,app.bufferMemory[0]));
+//         for(uint32_t i = 0; i < size; ++i) {
+//             //std::cout << out[i] << std::endl;
+//             ASSERT_EQ(push_constant*data[0][i],out[i]);
+//         }
+//     }
+// }
 
-        float push_constant = float(rand())/float(RAND_MAX);
-        char const shader[] = "../../../glsl/sscal.spv";
-        ComputeApp app = ComputeApp(
-            shader,
-            new uint32_t[1]{ size }, // Buffer sizes
-            1, //  Number of buffers
-            data, // Buffer data
-            new float[1]{ push_constant }, // Push constants
-            1, // Number of push constants
-            new uint32_t[3]{ size,1,1 }, // Invocations
-            new uint32_t[3]{ WORKGROUP_SIZE,1,1 }, // Workgroup sizes
-            false,
-            false
-        );
+// TEST(SAXPY, one) {
+//     uint32_t size = 10;
+//     float** data = new float*[2];
+//     data[0] = new float[size]{ 0,1,2,3,4,5,6,7,8,9 };
+//     data[1] = new float[size]{ 9,8,7,6,5,4,3,2,1,0 };
 
-        // Checking
-        float* out = ComputeApp::map(app.device,app.bufferMemories[0]);
-        for(uint32_t i=0;i<size;++i) {
-            EXPECT_EQ(out[i],push_constant*data[0][i]);
-        }
-    }
-}
+//     char const shader[] = "../../../glsl/saxpy.spv";
+//     ComputeApp app = ComputeApp(
+//         shader,
+//         2, //  Number of buffers
+//         new uint32_t[2]{ size, size }, // Buffer sizes
+//         data, // Buffer data
+//         1, // Number of push constants
+//         new float[1]{ 1 }, // Push constants
+//         new uint32_t[3]{ size,1,1 }, // Invocations
+//         new uint32_t[3]{ WORKGROUP_SIZE,1,1 } // Workgroup sizes
+//     );
+//     float* out = static_cast<float*>(Utility::map(app.device,app.bufferMemory[1]));
+//     for(uint32_t i = 0; i < size; ++i) {
+//         //std::cout << out[i] << std::endl;
+//         ASSERT_EQ(i+(size-i-1),out[i]);
+//     }
+// }
 
-TEST(SAXPY, one) {
-    uint32_t size = 10;
-    float** data = new float*[2];
-    data[0] = new float[size]{ 1,2,3,4,5,5,4,3,2,1 };
-    data[1] = new float[size]{ 9,8,7,6,5,4,3,2,1,0 };
+// TEST(SAXPY, two) {
+//     uint32_t size = 10;
+//     float** data = new float*[2];
+//     data[0] = new float[size]{ 0,1,2,3,4,5,6,7,8,9 };
+//     data[1] = new float[size]{ 9,8,7,6,5,4,3,2,1,0 };
 
-    char const shader[] = "../../../glsl/saxpy.spv";
-    ComputeApp app = ComputeApp(
-        shader,
-        new uint32_t[2]{ size, size }, // Buffer sizes
-        2, //  Number of buffers
-        data, // Buffer data
-        new float[1]{ 1 }, // Push constants
-        1, // Number of push constants
-        new uint32_t[3]{ size,1,1 }, // Invocations
-        new uint32_t[3]{ WORKGROUP_SIZE,1,1 }, // Workgroup sizes
-        false,
-        false
-    );
+//     char const shader[] = "../../../glsl/saxpy.spv";
+//     ComputeApp app = ComputeApp(
+//         shader,
+//         2, //  Number of buffers
+//         new uint32_t[2]{ size, size }, // Buffer sizes
+//         data, // Buffer data
+//         1, // Number of push constants
+//         new float[1]{ 2 }, // Push constants
+//         new uint32_t[3]{ size,1,1 }, // Invocations
+//         new uint32_t[3]{ WORKGROUP_SIZE,1,1 } // Workgroup sizes
+//     );
+//     float* out = static_cast<float*>(Utility::map(app.device,app.bufferMemory[1]));
+//     for(uint32_t i = 0; i < size; ++i) {
+//         //std::cout << out[i] << std::endl;
+//         ASSERT_EQ(2*i+(size-i-1),out[i]);
+//     }
+// }
 
-    // Checking
-    float* out = ComputeApp::map(app.device,app.bufferMemories[1]);
-    for(uint32_t i=0;i<size;++i) {
-        EXPECT_EQ(out[i],data[0][i]+data[1][i]);
-    }
-}
-TEST(SAXPY, two) {
-    uint32_t size = 10;
-    float** data = new float*[2];
-    data[0] = new float[size]{ 1,2,3,4,5,5,4,3,2,1 };
-    data[1] = new float[size]{ 9,8,7,6,5,4,3,2,1,0 };
+// TEST(SAXPY, random) {
+//     srand((unsigned int)time(NULL));
 
-    char const shader[] = "../../../glsl/saxpy.spv";
-    ComputeApp app = ComputeApp(
-        shader,
-        new uint32_t[2]{ size, size }, // Buffer sizes
-        2, //  Number of buffers
-        data, // Buffer data
-        new float[1]{ 2 }, // Push constants
-        1, // Number of push constants
-        new uint32_t[3]{ size,1,1 }, // Invocations
-        new uint32_t[3]{ WORKGROUP_SIZE,1,1 }, // Workgroup sizes
-        false,
-        false
-    );
+//     for(uint32_t i=0;i<RAND_RUNS;++i) {
 
-    // Checking
-    float* out = ComputeApp::map(app.device,app.bufferMemories[1]);
-    for(uint32_t i=0;i<size;++i) {
-        EXPECT_EQ(out[i],2*data[0][i]+data[1][i]);
-    }
-}
-TEST(SAXPY, random) {
-    srand((unsigned int)time(NULL));
+//         uint32_t size = MIN_SIZE + (rand() % uint32_t(MAX_SIZE - MIN_SIZE + 1));
 
-    for(uint32_t i=0;i<RAND_RUNS;++i) {
+//         float** data = new float*[2];
+//         data[0] = new float[size];
+//         data[1] = new float[size];
 
-        uint32_t size = MIN_SIZE + (rand() % uint32_t(MAX_SIZE - MIN_SIZE + 1));
+//         for(uint32_t j=0;j<size;++j) {
+//             data[0][j] = float(rand())/float(RAND_MAX);
+//             data[1][j] = float(rand())/float(RAND_MAX);
+//         }
 
-        float** data = new float*[2];
-        data[0] = new float[size];
-        data[1] = new float[size];
+//         float push_constant = float(rand())/float(RAND_MAX);
 
-        for(uint32_t j=0;j<size;++j) {
-            data[0][j] = float(rand())/float(RAND_MAX);
-            data[1][j] = float(rand())/float(RAND_MAX);
-        }
+//         char const shader[] = "../../../glsl/saxpy.spv";
+//         ComputeApp app = ComputeApp(
+//             shader,
+//             2, //  Number of buffers
+//             new uint32_t[2]{ size, size }, // Buffer sizes
+//             data, // Buffer data
+//             1, // Number of push constants
+//             new float[1]{ push_constant }, // Push constants
+//             new uint32_t[3]{ size,1,1 }, // Invocations
+//             new uint32_t[3]{ WORKGROUP_SIZE,1,1 } // Workgroup sizes
+//         );
+//         float* out = static_cast<float*>(Utility::map(app.device,app.bufferMemory[1]));
+//         for(uint32_t i = 0; i < size; ++i) {
+//             //std::cout << out[i] << std::endl;
+//             ASSERT_EQ(push_constant*data[0][i]+data[1][i],out[i]);
+//         }
+//     }
+// }
 
-        float push_constant = float(rand())/float(RAND_MAX);
-
-        char const shader[] = "../../../glsl/saxpy.spv";
-        ComputeApp app = ComputeApp(
-            shader,
-            new uint32_t[2]{ size, size }, // Buffer sizes
-            2, //  Number of buffers
-            data, // Buffer data
-            new float[1]{ push_constant }, // Push constants
-            1, // Number of push constants
-            new uint32_t[3]{ size,1,1 }, // Invocations
-            new uint32_t[3]{ WORKGROUP_SIZE,1,1 }, // Workgroup sizes
-            false,
-            false
-        );
-
-        // Checking
-        float* out = ComputeApp::map(app.device,app.bufferMemories[1]);
-
-        for(uint32_t i=0;i<size;++i) {
-            ASSERT_EQ(out[i],push_constant*data[0][i]+data[1][i]);
-        }
-    }
-}
-
-// My GPU does not support 'VK_EXT_SHADER_ATOMIC_FLOAT_EXTENSION' thus all tests of shaders with it are disabled.
-TEST(SDOT, DISABLED_one) {
+// 1 subgroup worth (10)
+TEST(SDOT_F, one) {
+    uint32_t const numBuffers = 3;
+    uint32_t const numPushConstants = 1;
     uint32_t size = 10;
     float** data = new float*[3];
-    data[0] = new float[size]{ 1,2,3,4,5,5,4,3,2,1 };
+    data[0] = new float[size]{ 0,1,2,3,4,5,6,7,8,9 };
     data[1] = new float[size]{ 9,8,7,6,5,4,3,2,1,0 };
-    data[2] = new float[1]{ 0 };
+    data[2] = new float[1];
 
-    char const shader[] = "../../../glsl/sdot.spv";
-    ComputeApp app = ComputeApp(
+    char const shader[] = "../../../glsl/sdot_f.spv";
+    ComputeApp<numPushConstants> app = ComputeApp<numPushConstants>(
         shader,
-        new uint32_t[3]{ size, size, 1 }, // Buffer sizes
-        3, //  Number of buffers
+        numBuffers, //  Number of buffers
+        new uint32_t[numBuffers]{ size, size, 1 }, // Buffer sizes
         data, // Buffer data
-        new float[0]{}, // Push constants
-        0, // Number of push constants
-        new uint32_t[3]{ size,1,1 }, // Invocations
-        new uint32_t[3]{ WORKGROUP_SIZE,1,1 }, // Workgroup sizes
-        true, // Requires atomic float
-        false
+        std::array<std::variant<uint32_t,float>, numPushConstants> { size }, // Push constants
+        new uint32_t[3]{ 1,1,1 }, // Invocations
+        new uint32_t[3]{ WORKGROUP_SIZE,1,1 } // Workgroup sizes
     );
-
-    // Checking
-    float* out = ComputeApp::map(app.device,app.bufferMemories[2]);
-    float sum = 0;
-    for(uint32_t i=0;i<size;++i) {
-        sum += data[0][i]*data[1][i];
-    }
-    ASSERT_EQ(*out,sum);
+    float* out = static_cast<float*>(Utility::map(app.device,app.bufferMemory[2]));
+    std::cout << *out << std::endl;
+    ASSERT_NEAR(*out,120.0,EPSILON);
+    //assert(false);
 }
-
-// Constant values requiring 1 application of the partial extension shader
-TEST(SDOT_PARTIAL, one) {
-    uint32_t size = WORKGROUP_SIZE+1;
-    uint32_t workgroups = ceil(size / static_cast<float>(WORKGROUP_SIZE));
-
+// 2 subgroups worth (70)
+TEST(SDOT_F, two) {
+    uint32_t const numBuffers = 3;
+    uint32_t const numPushConstants = 1;
+    uint32_t size = 70;
     float** data = new float*[3];
-    data[0] = new float[size];
-    data[1] = new float[size];
-    data[2] = new float[workgroups];
+    data[0] = new float[size]{ 
+        0,1,2,3,4,5,6,7,8,9,
+        0,1,2,3,4,5,6,7,8,9,
+        0,1,2,3,4,5,6,7,8,9,
+        0,1,2,3,4,5,6,7,8,9,
+        0,1,2,3,4,5,6,7,8,9,
+        0,1,2,3,4,5,6,7,8,9,
+        0,1,2,3,4,5,6,7,8,9
+    };
+    data[1] = new float[size]{
+        9,8,7,6,5,4,3,2,1,0,
+        9,8,7,6,5,4,3,2,1,0,
+        9,8,7,6,5,4,3,2,1,0,
+        9,8,7,6,5,4,3,2,1,0,
+        9,8,7,6,5,4,3,2,1,0,
+        9,8,7,6,5,4,3,2,1,0,
+        9,8,7,6,5,4,3,2,1,0
+    };
+    data[2] = new float[1];
 
-    for(uint32_t j=0;j<size;++j) {
-        data[0][j] = 1;
-        data[1][j] = 2;
-    }
-
-    char const shader[] = "../../../glsl/sdot_partial.spv";
-    ComputeApp app = ComputeApp(
+    char const shader[] = "../../../glsl/sdot_f.spv";
+    ComputeApp<numPushConstants> app = ComputeApp<numPushConstants>(
         shader,
-        new uint32_t[3]{ size, size, workgroups }, // Buffer sizes
-        3, //  Number of buffers
+        numBuffers, //  Number of buffers
+        new uint32_t[numBuffers]{ size, size, 1 }, // Buffer sizes
         data, // Buffer data
-        new float[0]{}, // Push constants
-        0, // Number of push constants
-        new uint32_t[3]{ size,1,1 }, // Invocations
-        new uint32_t[3]{ WORKGROUP_SIZE,1,1 }, // Workgroup sizes
-        false, // Requires atomic float
-        true
+        std::array<std::variant<uint32_t,float>, numPushConstants> { size }, // Push constants
+        new uint32_t[3]{ 1,1,1 }, // Invocations
+        new uint32_t[3]{ WORKGROUP_SIZE,1,1 } // Workgroup sizes
     );
-
-    // ComputeApp::print(app.device,app.bufferMemories[2],workgroups);
-    // ASSERT_EQ(false,true);
-
-    // Checking
-    float* out = ComputeApp::map(app.device,app.bufferMemories[2]);
-    ASSERT_EQ(*out,size*2);
+    float* out = static_cast<float*>(Utility::map(app.device,app.bufferMemory[2]));
+    std::cout << *out << std::endl;
+    ASSERT_NEAR(*out,840.0,EPSILON); // 120*7
+    //assert(false);
 }
-// Random values requiring 1 application of the partial extension shader
-TEST(SDOT_PARTIAL, random_one) {
+
+// 2 workgroups worth (1050)
+TEST(SDOT_F, three) {
+    uint32_t const numBuffers = 3;
+    uint32_t const numPushConstants = 1;
+    uint32_t size = 1050;
+    float** data = new float*[3];
+    // 21 x 50
+    data[0] = new float[size]{ 
+        0,1,2,3,4,5,6,7,8,9,0,1,2,3,4,5,6,7,8,9,0,1,2,3,4,5,6,7,8,9,0,1,2,3,4,5,6,7,8,9,0,1,2,3,4,5,6,7,8,9,
+        0,1,2,3,4,5,6,7,8,9,0,1,2,3,4,5,6,7,8,9,0,1,2,3,4,5,6,7,8,9,0,1,2,3,4,5,6,7,8,9,0,1,2,3,4,5,6,7,8,9,
+        0,1,2,3,4,5,6,7,8,9,0,1,2,3,4,5,6,7,8,9,0,1,2,3,4,5,6,7,8,9,0,1,2,3,4,5,6,7,8,9,0,1,2,3,4,5,6,7,8,9,
+        0,1,2,3,4,5,6,7,8,9,0,1,2,3,4,5,6,7,8,9,0,1,2,3,4,5,6,7,8,9,0,1,2,3,4,5,6,7,8,9,0,1,2,3,4,5,6,7,8,9,
+        0,1,2,3,4,5,6,7,8,9,0,1,2,3,4,5,6,7,8,9,0,1,2,3,4,5,6,7,8,9,0,1,2,3,4,5,6,7,8,9,0,1,2,3,4,5,6,7,8,9,
+        0,1,2,3,4,5,6,7,8,9,0,1,2,3,4,5,6,7,8,9,0,1,2,3,4,5,6,7,8,9,0,1,2,3,4,5,6,7,8,9,0,1,2,3,4,5,6,7,8,9,
+        0,1,2,3,4,5,6,7,8,9,0,1,2,3,4,5,6,7,8,9,0,1,2,3,4,5,6,7,8,9,0,1,2,3,4,5,6,7,8,9,0,1,2,3,4,5,6,7,8,9,
+        0,1,2,3,4,5,6,7,8,9,0,1,2,3,4,5,6,7,8,9,0,1,2,3,4,5,6,7,8,9,0,1,2,3,4,5,6,7,8,9,0,1,2,3,4,5,6,7,8,9,
+        0,1,2,3,4,5,6,7,8,9,0,1,2,3,4,5,6,7,8,9,0,1,2,3,4,5,6,7,8,9,0,1,2,3,4,5,6,7,8,9,0,1,2,3,4,5,6,7,8,9,
+        0,1,2,3,4,5,6,7,8,9,0,1,2,3,4,5,6,7,8,9,0,1,2,3,4,5,6,7,8,9,0,1,2,3,4,5,6,7,8,9,0,1,2,3,4,5,6,7,8,9,
+        0,1,2,3,4,5,6,7,8,9,0,1,2,3,4,5,6,7,8,9,0,1,2,3,4,5,6,7,8,9,0,1,2,3,4,5,6,7,8,9,0,1,2,3,4,5,6,7,8,9,
+        0,1,2,3,4,5,6,7,8,9,0,1,2,3,4,5,6,7,8,9,0,1,2,3,4,5,6,7,8,9,0,1,2,3,4,5,6,7,8,9,0,1,2,3,4,5,6,7,8,9,
+        0,1,2,3,4,5,6,7,8,9,0,1,2,3,4,5,6,7,8,9,0,1,2,3,4,5,6,7,8,9,0,1,2,3,4,5,6,7,8,9,0,1,2,3,4,5,6,7,8,9,
+        0,1,2,3,4,5,6,7,8,9,0,1,2,3,4,5,6,7,8,9,0,1,2,3,4,5,6,7,8,9,0,1,2,3,4,5,6,7,8,9,0,1,2,3,4,5,6,7,8,9,
+        0,1,2,3,4,5,6,7,8,9,0,1,2,3,4,5,6,7,8,9,0,1,2,3,4,5,6,7,8,9,0,1,2,3,4,5,6,7,8,9,0,1,2,3,4,5,6,7,8,9,
+        0,1,2,3,4,5,6,7,8,9,0,1,2,3,4,5,6,7,8,9,0,1,2,3,4,5,6,7,8,9,0,1,2,3,4,5,6,7,8,9,0,1,2,3,4,5,6,7,8,9,
+        0,1,2,3,4,5,6,7,8,9,0,1,2,3,4,5,6,7,8,9,0,1,2,3,4,5,6,7,8,9,0,1,2,3,4,5,6,7,8,9,0,1,2,3,4,5,6,7,8,9,
+        0,1,2,3,4,5,6,7,8,9,0,1,2,3,4,5,6,7,8,9,0,1,2,3,4,5,6,7,8,9,0,1,2,3,4,5,6,7,8,9,0,1,2,3,4,5,6,7,8,9,
+        0,1,2,3,4,5,6,7,8,9,0,1,2,3,4,5,6,7,8,9,0,1,2,3,4,5,6,7,8,9,0,1,2,3,4,5,6,7,8,9,0,1,2,3,4,5,6,7,8,9,
+        0,1,2,3,4,5,6,7,8,9,0,1,2,3,4,5,6,7,8,9,0,1,2,3,4,5,6,7,8,9,0,1,2,3,4,5,6,7,8,9,0,1,2,3,4,5,6,7,8,9,
+        0,1,2,3,4,5,6,7,8,9,0,1,2,3,4,5,6,7,8,9,0,1,2,3,4,5,6,7,8,9,0,1,2,3,4,5,6,7,8,9,0,1,2,3,4,5,6,7,8,9
+    };
+    // 21 x 50
+    data[1] = new float[size]{
+        9,8,7,6,5,4,3,2,1,0,9,8,7,6,5,4,3,2,1,0,9,8,7,6,5,4,3,2,1,0,9,8,7,6,5,4,3,2,1,0,9,8,7,6,5,4,3,2,1,0,
+        9,8,7,6,5,4,3,2,1,0,9,8,7,6,5,4,3,2,1,0,9,8,7,6,5,4,3,2,1,0,9,8,7,6,5,4,3,2,1,0,9,8,7,6,5,4,3,2,1,0,
+        9,8,7,6,5,4,3,2,1,0,9,8,7,6,5,4,3,2,1,0,9,8,7,6,5,4,3,2,1,0,9,8,7,6,5,4,3,2,1,0,9,8,7,6,5,4,3,2,1,0,
+        9,8,7,6,5,4,3,2,1,0,9,8,7,6,5,4,3,2,1,0,9,8,7,6,5,4,3,2,1,0,9,8,7,6,5,4,3,2,1,0,9,8,7,6,5,4,3,2,1,0,
+        9,8,7,6,5,4,3,2,1,0,9,8,7,6,5,4,3,2,1,0,9,8,7,6,5,4,3,2,1,0,9,8,7,6,5,4,3,2,1,0,9,8,7,6,5,4,3,2,1,0,
+        9,8,7,6,5,4,3,2,1,0,9,8,7,6,5,4,3,2,1,0,9,8,7,6,5,4,3,2,1,0,9,8,7,6,5,4,3,2,1,0,9,8,7,6,5,4,3,2,1,0,
+        9,8,7,6,5,4,3,2,1,0,9,8,7,6,5,4,3,2,1,0,9,8,7,6,5,4,3,2,1,0,9,8,7,6,5,4,3,2,1,0,9,8,7,6,5,4,3,2,1,0,
+        9,8,7,6,5,4,3,2,1,0,9,8,7,6,5,4,3,2,1,0,9,8,7,6,5,4,3,2,1,0,9,8,7,6,5,4,3,2,1,0,9,8,7,6,5,4,3,2,1,0,
+        9,8,7,6,5,4,3,2,1,0,9,8,7,6,5,4,3,2,1,0,9,8,7,6,5,4,3,2,1,0,9,8,7,6,5,4,3,2,1,0,9,8,7,6,5,4,3,2,1,0,
+        9,8,7,6,5,4,3,2,1,0,9,8,7,6,5,4,3,2,1,0,9,8,7,6,5,4,3,2,1,0,9,8,7,6,5,4,3,2,1,0,9,8,7,6,5,4,3,2,1,0,
+        9,8,7,6,5,4,3,2,1,0,9,8,7,6,5,4,3,2,1,0,9,8,7,6,5,4,3,2,1,0,9,8,7,6,5,4,3,2,1,0,9,8,7,6,5,4,3,2,1,0,
+        9,8,7,6,5,4,3,2,1,0,9,8,7,6,5,4,3,2,1,0,9,8,7,6,5,4,3,2,1,0,9,8,7,6,5,4,3,2,1,0,9,8,7,6,5,4,3,2,1,0,
+        9,8,7,6,5,4,3,2,1,0,9,8,7,6,5,4,3,2,1,0,9,8,7,6,5,4,3,2,1,0,9,8,7,6,5,4,3,2,1,0,9,8,7,6,5,4,3,2,1,0,
+        9,8,7,6,5,4,3,2,1,0,9,8,7,6,5,4,3,2,1,0,9,8,7,6,5,4,3,2,1,0,9,8,7,6,5,4,3,2,1,0,9,8,7,6,5,4,3,2,1,0,
+        9,8,7,6,5,4,3,2,1,0,9,8,7,6,5,4,3,2,1,0,9,8,7,6,5,4,3,2,1,0,9,8,7,6,5,4,3,2,1,0,9,8,7,6,5,4,3,2,1,0,
+        9,8,7,6,5,4,3,2,1,0,9,8,7,6,5,4,3,2,1,0,9,8,7,6,5,4,3,2,1,0,9,8,7,6,5,4,3,2,1,0,9,8,7,6,5,4,3,2,1,0,
+        9,8,7,6,5,4,3,2,1,0,9,8,7,6,5,4,3,2,1,0,9,8,7,6,5,4,3,2,1,0,9,8,7,6,5,4,3,2,1,0,9,8,7,6,5,4,3,2,1,0,
+        9,8,7,6,5,4,3,2,1,0,9,8,7,6,5,4,3,2,1,0,9,8,7,6,5,4,3,2,1,0,9,8,7,6,5,4,3,2,1,0,9,8,7,6,5,4,3,2,1,0,
+        9,8,7,6,5,4,3,2,1,0,9,8,7,6,5,4,3,2,1,0,9,8,7,6,5,4,3,2,1,0,9,8,7,6,5,4,3,2,1,0,9,8,7,6,5,4,3,2,1,0,
+        9,8,7,6,5,4,3,2,1,0,9,8,7,6,5,4,3,2,1,0,9,8,7,6,5,4,3,2,1,0,9,8,7,6,5,4,3,2,1,0,9,8,7,6,5,4,3,2,1,0,
+        9,8,7,6,5,4,3,2,1,0,9,8,7,6,5,4,3,2,1,0,9,8,7,6,5,4,3,2,1,0,9,8,7,6,5,4,3,2,1,0,9,8,7,6,5,4,3,2,1,0
+    };
+    data[2] = new float[1];
+
+    char const shader[] = "../../../glsl/sdot_f.spv";
+    ComputeApp<numPushConstants> app = ComputeApp<numPushConstants>(
+        shader,
+        numBuffers, //  Number of buffers
+        new uint32_t[numBuffers]{ size, size, 1 }, // Buffer sizes
+        data, // Buffer data
+        std::array<std::variant<uint32_t,float>, numPushConstants> { size }, // Push constants
+        new uint32_t[3]{ 1,1,1 }, // Invocations
+        new uint32_t[3]{ WORKGROUP_SIZE,1,1 } // Workgroup sizes
+    );
+    float* out = static_cast<float*>(Utility::map(app.device,app.bufferMemory[2]));
+    std::cout << *out << std::endl;
+    ASSERT_NEAR(*out,12600.0,EPSILON); // 120 * 5 * 21
+    //assert(false);
+}
+
+TEST(SDOT_F, random) {
     srand((unsigned int)time(NULL));
+
+    uint32_t const numBuffers = 3;
+    uint32_t const numPushConstants = 1;
 
     for(uint32_t i=0;i<RAND_RUNS;++i) {
         uint32_t max = WORKGROUP_SIZE*WORKGROUP_SIZE;
         uint32_t min = WORKGROUP_SIZE+1;
         uint32_t size = min + (rand() % uint32_t(max - min + 1));
-        uint32_t workgroups = ceil(size / static_cast<float>(WORKGROUP_SIZE));
 
         float** data = new float*[3];
         data[0] = new float[size];
         data[1] = new float[size];
-        data[2] = new float[workgroups];
+        data[2] = new float[1];
 
         for(uint32_t j=0;j<size;++j) {
             data[0][j] = float(rand())/float(RAND_MAX);
             data[1][j] = float(rand())/float(RAND_MAX);
         }
 
-        //auto start = std::chrono::high_resolution_clock::now();
-        char const shader[] = "../../../glsl/sdot_partial.spv";
-        ComputeApp app = ComputeApp(
+        char const shader[] = "../../../glsl/sdot_f.spv";
+        ComputeApp<numPushConstants> app = ComputeApp<numPushConstants>(
             shader,
-            new uint32_t[3]{ size, size, workgroups }, // Buffer sizes
-            3, //  Number of buffers
+            numBuffers, //  Number of buffers
+            new uint32_t[numBuffers]{ size, size, 1 }, // Buffer sizes
             data, // Buffer data
-            new float[0]{}, // Push constants
-            0, // Number of push constants
-            new uint32_t[3]{ size,1,1 }, // Invocations
-            new uint32_t[3]{ WORKGROUP_SIZE,1,1 }, // Workgroup sizes
-            false, // Requires atomic float
-            true
+            std::array<std::variant<uint32_t,float>, numPushConstants> { size }, // Push constants
+            new uint32_t[3]{ 1,1,1 }, // Invocations
+            new uint32_t[3]{ WORKGROUP_SIZE,1,1 } // Workgroup sizes
         );
-        //auto gpu_duration = std::chrono::duration_cast<std::chrono::microseconds>(std::chrono::high_resolution_clock::now()-start);
-
-        // ComputeApp::print(app.device,app.bufferMemories[2],workgroups);
-        // ASSERT_EQ(false,true);
-
-        // Checking
-        float* out = ComputeApp::map(app.device,app.bufferMemories[2]);
-
-        //start = std::chrono::high_resolution_clock::now();
+        float* out = static_cast<float*>(Utility::map(app.device,app.bufferMemory[2]));
         float sum = 0;
-        for(uint32_t i=0;i<size;++i) {
-            sum += data[0][i]*data[1][i];
+        for(uint32_t i = 0; i < size; ++i) {
+            //std::cout << out[i] << std::endl;
+            sum += data[0][i] * data[1][i];
         }
-
-        // auto cpu_duration = std::chrono::duration_cast<std::chrono::microseconds>(std::chrono::high_resolution_clock::now()-start);
-        // std::cout << "gpu: " << gpu_duration.count() << "cpu: " << cpu_duration.count() << std::endl;
-        // ASSERT_LT(gpu_duration,cpu_duration);
-        
+        std::cout << *out << std::endl;
         ASSERT_NEAR(*out,sum,EPSILON);
     }
-}
-// Constant values requiring 2 applications of the partial extension shader
-TEST(SDOT_PARTIAL, two) {
-    uint32_t size = WORKGROUP_SIZE*WORKGROUP_SIZE+1; //1024*1024+1
-    uint32_t workgroups = ceil(size / static_cast<float>(WORKGROUP_SIZE));
-
-    float** data = new float*[3];
-    data[0] = new float[size];
-    data[1] = new float[size];
-    data[2] = new float[workgroups];
-
-    for(uint32_t j=0;j<size;++j) {
-        data[0][j] = 1;
-        data[1][j] = 2;
-    }
-
-    char const shader[] = "../../../glsl/sdot_partial.spv";
-    ComputeApp app = ComputeApp(
-        shader,
-        new uint32_t[3]{ size, size, workgroups }, // Buffer sizes
-        3, //  Number of buffers
-        data, // Buffer data
-        new float[0]{}, // Push constants
-        0, // Number of push constants
-        new uint32_t[3]{ size,1,1 }, // Invocations
-        new uint32_t[3]{ WORKGROUP_SIZE,1,1 }, // Workgroup sizes
-        false, // Requires atomic float
-        true
-    );
-
-    // ComputeApp::print(app.device,app.bufferMemories[2],workgroups);
-    // ASSERT_EQ(false,true);
-
-    // Checking
-    float* out = ComputeApp::map(app.device,app.bufferMemories[2]);
-    ASSERT_EQ(*out,size*2);
-}
-// Doesn't work, I beleive due to size
-// Constant values requiring 3 applications of the partial extension shader
-TEST(SDOT_PARTIAL, DISABLED_three) {
-    uint32_t size = WORKGROUP_SIZE*WORKGROUP_SIZE*WORKGROUP_SIZE+1; //1024*1024+1
-    uint32_t workgroups = ceil(size / static_cast<float>(WORKGROUP_SIZE));
-
-    float** data = new float*[3];
-    data[0] = new float[size];
-    data[1] = new float[size];
-    data[2] = new float[workgroups];
-
-    for(uint32_t j=0;j<size;++j) {
-        data[0][j] = 1;
-        data[1][j] = 2;
-    }
-
-    char const shader[] = "../../../glsl/sdot_partial.spv";
-    ComputeApp app = ComputeApp(
-        shader,
-        new uint32_t[3]{ size, size, workgroups }, // Buffer sizes
-        3, //  Number of buffers
-        data, // Buffer data
-        new float[0]{}, // Push constants
-        0, // Number of push constants
-        new uint32_t[3]{ size,1,1 }, // Invocations
-        new uint32_t[3]{ WORKGROUP_SIZE,1,1 }, // Workgroup sizes
-        false, // Requires atomic float
-        true
-    );
-
-    // ComputeApp::print(app.device,app.bufferMemories[2],workgroups);
-    // ASSERT_EQ(false,true);
-
-    // Checking
-    float* out = ComputeApp::map(app.device,app.bufferMemories[2]);
-    ASSERT_EQ(*out,size*2);
 }

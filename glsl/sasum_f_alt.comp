@@ -1,0 +1,62 @@
+#version 450
+#extension GL_EXT_shader_atomic_float: enable
+ 
+layout(local_size_x = 1024, local_size_y = 1, local_size_z = 1) in;
+ 
+layout(binding = 0) buffer Inputs {
+    float x[];
+};
+ 
+// Our final total sum
+layout(binding = 1) buffer Output {
+    float sum;
+};
+ 
+// Length of `x`
+layout(push_constant) uniform PushConsts {
+    uint n; // n=len(x)
+};
+
+shared float reduceSums[gl_WorkGroupSize.x]; // len(reduceSums) = n/2
+ 
+
+// This should only be called with 1 workgroup
+// gl_LocalInvocationID.x === gl_GlobalInvocationID.x
+void main() {
+    const uint indx = gl_LocalInvocationID.x;
+ 
+    const uint elementsPer = n / gl_WorkGroupSize.x;
+    for(uint i=0;i<elementsPer;++i) {
+        reduceSums[indx] += abs(x[elementsPer * indx + i]);
+    }
+
+    uint space = gl_WorkGroupSize.x/2;
+ 
+    barrier();
+    
+    // This is effectively the first iteration
+    if (indx < space) {
+        reduceSums[indx] = x[2*indx] + x[2*indx+1];
+    }
+
+    const uint logLen = uint(log2(gl_WorkGroupSize));
+ 
+    // The logic here is fairly tricky.
+    // I read a paper and some explanation by some nvidia guy when I learned it, I can't find these anymore,
+    //  but I made a diagram of an example, pls see 'sasum.png'
+    for(uint d=2; d<=logLen; d++) {
+        space = n/(2^d);
+        barrier(); // Waits till every invocation has finished this layer to begin next
+        if (indx < space) {
+            for(uint i=0;i<elementsPer;++i) {
+                reduceSums[indx] += reduceSums[2*indx+i];
+            }
+            // reduceSums[indx] = reduceSums[2*indx] + reduceSums[2*indx+1];
+        }
+    }
+ 
+    barrier();
+ 
+    // For 1 invocation in the workgroup, set the workgroup sum as the total sum
+    if(gl_LocalInvocationID.x == 0) sum = reduceSums[0];
+}

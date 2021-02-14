@@ -14,7 +14,7 @@ sscal | ✅ | sgemv | ✔️ | sgemm | 📅 |
 saxpy | ✅ |  |   |   |   | 
 sdot | ✅ |  |   |   |   | 
 snrm2 | ✅ |  |   |   |   | 
-sasum | ✔️ |  |   |   |   |
+sasum | ✅ |  |   |   |   |
 isamax | ✔️ |  |   |   |   | 
 
 </td><td>

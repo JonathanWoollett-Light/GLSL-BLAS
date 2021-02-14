@@ -13,7 +13,7 @@ Level 1 |  | Level 2 |  | Level 3 |  |
 sscal | ✅ | sgemv | ✔️ | sgemm | 📅 |
 saxpy | ✅ |  |   |   |   | 
 sdot | ✅ |  |   |   |   | 
-snrm2 | ✔️ |  |   |   |   | 
+snrm2 | ✅ |  |   |   |   | 
 sasum | ✔️ |  |   |   |   |
 isamax | ✔️ |  |   |   |   | 
 

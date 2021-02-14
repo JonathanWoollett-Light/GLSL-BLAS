@@ -3,14 +3,15 @@
 
 layout(local_size_x = 1024, local_size_y = 1, local_size_z = 1) in;
 
-layout(binding = 0) buffer Buffer0 {
+// For explanation of how summation works pls see 'sasum_subgroup.comp'.
+// Other than that, it's pretty simple.
+
+layout(binding = 0) buffer Buffer {
     float x[];
 };
-layout(binding = 1) buffer Buffer1 {
-    float y[];
-};
-layout(binding = 2) buffer Output {
-   float total; // total sum
+layout(binding = 1) buffer Output
+{
+   float total;
 };
 // Length of `x` & `y`
 layout(push_constant) uniform PushConsts {
@@ -19,11 +20,9 @@ layout(push_constant) uniform PushConsts {
 
 shared float sdata[16]; // gl_WorkGroupSize.x / gl_SubgroupSize.x = 1024 / 64 = 16;
 
-// This should only be called with 1 workgroup
-// gl_LocalInvocationID.x === gl_GlobalInvocationID.x
 void main() {
     const uint indx = gl_LocalInvocationID.x;
-    float  sum = 0; // x ⊙ j (vector dot product = matrix hadamard product + summation)
+    float sum = 0; // x ⊙ j (vector dot product = matrix hadamard product + summation)
 
     // n -> gl_WorkGroupSize.x
     // ---------------------------
@@ -31,7 +30,7 @@ void main() {
     // Number of elements this invocation must cover
     const uint elements = uint(ceil(n / float(gl_WorkGroupSize.x)));
     for(uint i=0;i<elements;++i) {
-        sum += x[elements * indx + i] * y[elements * indx + i];
+        sum += x[elements * indx + i] * x[elements * indx + i];
     }
     barrier();
 

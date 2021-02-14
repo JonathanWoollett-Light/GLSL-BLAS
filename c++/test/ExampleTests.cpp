@@ -423,7 +423,7 @@ TEST(SNRM2_F, one) {
     );
     float* out = static_cast<float*>(Utility::map(app.device,app.bufferMemory[1]));
     std::cout << *out << std::endl;
-    ASSERT_NEAR(*out,285.0,EPSILON);
+    ASSERT_NEAR(*out,16.881943,EPSILON);
     //assert(false);
 }
 
@@ -458,7 +458,7 @@ TEST(SNRM2_F, two) {
     );
     float* out = static_cast<float*>(Utility::map(app.device,app.bufferMemory[1]));
     std::cout << *out << std::endl;
-    ASSERT_NEAR(*out,1995.0,EPSILON); // 285*7
+    ASSERT_NEAR(*out,44.665422,EPSILON); // 285*7
     //assert(false);
 }
 
@@ -508,7 +508,7 @@ TEST(SNRM2_F, three) {
     );
     float* out = static_cast<float*>(Utility::map(app.device,app.bufferMemory[1]));
     std::cout << *out << std::endl;
-    ASSERT_NEAR(*out,29925,EPSILON); // 285 * 5 * 21
+    ASSERT_NEAR(*out,172.988438,EPSILON); // 285 * 5 * 21
     //assert(false);
 }
 
@@ -549,6 +549,6 @@ TEST(SNRM2_F, random) {
             sum += data[0][i] * data[0][i];
         }
         std::cout << *out << std::endl;
-        ASSERT_NEAR(*out,sum,EPSILON);
+        ASSERT_NEAR(*out,sqrt(sum),EPSILON);
     }
 }

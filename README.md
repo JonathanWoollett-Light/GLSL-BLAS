@@ -15,7 +15,7 @@ saxpy | ✅ |  |   |   |   |
 sdot | ✅ |  |   |   |   | 
 snrm2 | ✅ |  |   |   |   | 
 sasum | ✅ |  |   |   |   |
-isamax | ✔️ |  |   |   |   | 
+isamax | ✅ |  |   |   |   | 
 
 </td><td>
 

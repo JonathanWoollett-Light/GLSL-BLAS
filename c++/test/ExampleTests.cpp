@@ -708,3 +708,115 @@ TEST(SASUM_F, random) {
         ASSERT_NEAR(*out,sum,EPSILON);
     }
 }
+
+// isamax
+// -----------------------------------------
+
+// 1 subgroup worth (10)
+TEST(ISAMAX_F, one) {
+    uint32_t const numBuffers = 2;
+    uint32_t const numPushConstants = 1;
+    uint32_t const size = 10;
+
+    float** data = new float*[numBuffers];
+    data[0] = new float[size]{ 0,1,2,3,4,5,6,7,8,9 };
+    data[1] = new float[1];
+
+    char const shader[] = "../../../glsl/isamax_f.spv";
+
+    ComputeApp<numPushConstants> app = ComputeApp<numPushConstants>(
+        shader,
+        numBuffers, //  Number of buffers
+        new uint32_t[numBuffers]{ size, 1 }, // Buffer sizes
+        data, // Buffer data
+        std::array<std::variant<uint32_t,float>, numPushConstants> { size }, // Push constants
+        new uint32_t[3]{ 1,1,1 }, // Invocations
+        new uint32_t[3]{ WORKGROUP_SIZE,1,1 } // Workgroup sizes
+    );
+    uint32_t* out = static_cast<uint32_t*>(Utility::map(app.device,app.bufferMemory[1]));
+    std::cout << *out << std::endl;
+    ASSERT_EQ(*out,9);
+    //assert(false);
+}
+
+// 1 subgroup worth (70)
+TEST(ISAMAX_F, two) {
+    uint32_t const numBuffers = 2;
+    uint32_t const numPushConstants = 1;
+    uint32_t const size = 70;
+
+    float** data = new float*[numBuffers];
+    data[0] = new float[size]{ 
+        0,1,2,3,4,5,6,7,8,9,
+        10,11,12,13,14,15,16,17,18,19,
+        20,21,22,23,24,25,26,27,28,29,
+        30,31,32,33,34,35,36,37,38,39,
+        40,41,42,43,44,45,46,47,48,49,
+        50,51,52,53,54,55,56,57,58,59,
+        40,41,42,43,44,45,46,47,48,49
+    };
+    data[1] = new float[1];
+
+    char const shader[] = "../../../glsl/isamax_f.spv";
+
+    ComputeApp<numPushConstants> app = ComputeApp<numPushConstants>(
+        shader,
+        numBuffers, //  Number of buffers
+        new uint32_t[numBuffers]{ size, 1 }, // Buffer sizes
+        data, // Buffer data
+        std::array<std::variant<uint32_t,float>, numPushConstants> { size }, // Push constants
+        new uint32_t[3]{ 1,1,1 }, // Invocations
+        new uint32_t[3]{ WORKGROUP_SIZE,1,1 } // Workgroup sizes
+    );
+    uint32_t* out = static_cast<uint32_t*>(Utility::map(app.device,app.bufferMemory[1]));
+    std::cout << *out << std::endl;
+    ASSERT_EQ(*out,59);
+    //assert(false);
+}
+
+TEST(ISAMAX_F, random) {
+    srand((unsigned int)time(NULL));
+
+    uint32_t const numBuffers = 2;
+    uint32_t const numPushConstants = 1;
+
+    for(uint32_t i=0;i<RAND_RUNS;++i) {
+        uint32_t max = WORKGROUP_SIZE*WORKGROUP_SIZE;
+        uint32_t min = WORKGROUP_SIZE+1;
+        uint32_t size = min + (rand() % uint32_t(max - min + 1));
+
+        float** data = new float*[numBuffers];
+        data[0] = new float[size];
+        data[1] = new float[1];
+
+        for(uint32_t j=0;j<size;++j) {
+            data[0][j] = float(rand())/float(RAND_MAX);
+        }
+
+        char const shader[] = "../../../glsl/isamax_f.spv";
+
+        ComputeApp<numPushConstants> app = ComputeApp<numPushConstants>(
+            shader,
+            numBuffers, //  Number of buffers
+            new uint32_t[numBuffers]{ size, 1 }, // Buffer sizes
+            data, // Buffer data
+            std::array<std::variant<uint32_t,float>, numPushConstants> { size }, // Push constants
+            new uint32_t[3]{ 1,1,1 }, // Invocations
+            new uint32_t[3]{ WORKGROUP_SIZE,1,1 } // Workgroup sizes
+        );
+
+        uint32_t* out = static_cast<uint32_t*>(Utility::map(app.device,app.bufferMemory[1]));
+        float maxValue = abs(data[0][0]);
+        uint32_t maxIndex = 0;
+        for(uint32_t i = 0; i < size; ++i) {
+            //std::cout << out[i] << std::endl;
+            float absValue = abs(data[0][i]);
+            if (absValue > maxValue) {
+                maxValue = absValue;
+                maxIndex = i;
+            }
+        }
+        std::cout << *out << std::endl;
+        ASSERT_EQ(*out,maxIndex);
+    }
+}

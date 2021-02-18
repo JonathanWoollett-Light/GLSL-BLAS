@@ -181,7 +181,7 @@ namespace Utility {
 
         return pushConstantSize;
     }
-    
+
     // Creates command buffer
     template <uint32_t NumPushConstants>
     void createCommandBuffer(
@@ -233,13 +233,26 @@ namespace Utility {
 
         // Sets push constants
         if(pushConstantSize.has_value()) {
+            char* bytes = new char[pushConstantSize.value()];
+            uint32_t byteCounter = 0;
+            for(uint32_t i=0;i<pushConstants.size();++i) {
+                if(float* flt = std::get_if<float>(&pushConstants[i])) {
+                    *reinterpret_cast<float*>(bytes+byteCounter) = *flt;
+                    byteCounter += sizeof(float);
+                }
+                else if(uint32_t* uin = std::get_if<uint32_t>(&pushConstants[i])) {
+                    *reinterpret_cast<uint32_t*>(bytes+byteCounter) = *uin;
+                    byteCounter += sizeof(uint32_t);
+                }
+            }
+            
             vkCmdPushConstants(
                 *commandBuffer, 
                 pipelineLayout, 
                 VK_SHADER_STAGE_COMPUTE_BIT, 
                 0, 
                 pushConstantSize.value(), 
-                pushConstants.data()
+                static_cast<void*>(bytes)
             );
         }
 

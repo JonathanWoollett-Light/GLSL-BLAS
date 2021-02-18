@@ -26,18 +26,18 @@ void main() {
     // ---------------------------
 
     const uint elements = uint(ceil(n / float(gl_WorkGroupSize.x)));
-
-    uint tempIndex = elements * indx;
-    float mValue = abs(x[tempIndex]);
-    uint mIndex = tempIndex;
+    
+    const uint start = elements * indx;
+    const uint stop = start + elements;
 
     // Number of elements this invocation must cover
-    for(uint i=1;i<elements;++i) {
-        tempIndex = elements * indx + i;
-        float absValue = abs(x[tempIndex]);
+    float mValue = abs(x[start]);
+    uint mIndex = start;
+    for(uint i=start+1;i<stop;++i) {
+        float absValue = abs(x[i]);
         if (absValue > mValue) {
             mValue = absValue;
-            mIndex = tempIndex;
+            mIndex = i;
         }
     }
     barrier();

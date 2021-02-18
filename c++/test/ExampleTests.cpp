@@ -103,9 +103,9 @@ TEST(SSCAL, random) {
         );
 
         float* out = static_cast<float*>(Utility::map(app.device,app.bufferMemory[0]));
-        for(uint32_t i = 0; i < size; ++i) {
+        for(uint32_t j = 0; j < size; ++j) {
             //std::cout << out[i] << std::endl;
-            ASSERT_EQ(pushConstant*data[0][i],out[i]);
+            ASSERT_EQ(pushConstant*data[0][j],out[j]);
         }
     }
 }
@@ -200,9 +200,9 @@ TEST(SAXPY, random) {
         );
 
         float* out = static_cast<float*>(Utility::map(app.device,app.bufferMemory[1]));
-        for(uint32_t i = 0; i < size; ++i) {
+        for(uint32_t j = 0; j < size; ++j) {
             //std::cout << out[i] << std::endl;
-            ASSERT_EQ(pushConstant*data[0][i]+data[1][i],out[i]);
+            ASSERT_EQ(pushConstant*data[0][j]+data[1][j],out[j]);
         }
     }
 }
@@ -233,9 +233,8 @@ TEST(SDOT_F, one) {
         new uint32_t[3]{ WORKGROUP_SIZE,1,1 } // Workgroup sizes
     );
     float* out = static_cast<float*>(Utility::map(app.device,app.bufferMemory[2]));
-    std::cout << *out << std::endl;
+    // std::cout << *out << std::endl;
     ASSERT_NEAR(*out,120.0,EPSILON);
-    //assert(false);
 }
 // 2 subgroups worth (70)
 TEST(SDOT_F, two) {
@@ -276,9 +275,8 @@ TEST(SDOT_F, two) {
         new uint32_t[3]{ WORKGROUP_SIZE,1,1 } // Workgroup sizes
     );
     float* out = static_cast<float*>(Utility::map(app.device,app.bufferMemory[2]));
-    std::cout << *out << std::endl;
+    // std::cout << *out << std::endl;
     ASSERT_NEAR(*out,840.0,EPSILON); // 120*7
-    //assert(false);
 }
 
 // 2 workgroups worth (1050)
@@ -350,9 +348,8 @@ TEST(SDOT_F, three) {
         new uint32_t[3]{ WORKGROUP_SIZE,1,1 } // Workgroup sizes
     );
     float* out = static_cast<float*>(Utility::map(app.device,app.bufferMemory[2]));
-    std::cout << *out << std::endl;
+    // std::cout << *out << std::endl;
     ASSERT_NEAR(*out,12600.0,EPSILON); // 120 * 5 * 21
-    //assert(false);
 }
 
 TEST(SDOT_F, random) {
@@ -388,11 +385,11 @@ TEST(SDOT_F, random) {
         );
         float* out = static_cast<float*>(Utility::map(app.device,app.bufferMemory[2]));
         float sum = 0;
-        for(uint32_t i = 0; i < size; ++i) {
+        for(uint32_t j = 0; j < size; ++j) {
             //std::cout << out[i] << std::endl;
-            sum += data[0][i] * data[1][i];
+            sum += data[0][j] * data[1][j];
         }
-        std::cout << *out << std::endl;
+        // std::cout << *out << std::endl;
         ASSERT_NEAR(*out,sum,EPSILON);
     }
 }
@@ -422,9 +419,8 @@ TEST(SNRM2_F, one) {
         new uint32_t[3]{ WORKGROUP_SIZE,1,1 } // Workgroup sizes
     );
     float* out = static_cast<float*>(Utility::map(app.device,app.bufferMemory[1]));
-    std::cout << *out << std::endl;
+    // std::cout << *out << std::endl;
     ASSERT_NEAR(*out,16.881943,EPSILON);
-    //assert(false);
 }
 
 // 2 subgroups worth (70)
@@ -457,9 +453,8 @@ TEST(SNRM2_F, two) {
         new uint32_t[3]{ WORKGROUP_SIZE,1,1 } // Workgroup sizes
     );
     float* out = static_cast<float*>(Utility::map(app.device,app.bufferMemory[1]));
-    std::cout << *out << std::endl;
+    // std::cout << *out << std::endl;
     ASSERT_NEAR(*out,44.665422,EPSILON); // 285*7
-    //assert(false);
 }
 
 // 2 workgroups worth (1050)
@@ -507,9 +502,8 @@ TEST(SNRM2_F, three) {
         new uint32_t[3]{ WORKGROUP_SIZE,1,1 } // Workgroup sizes
     );
     float* out = static_cast<float*>(Utility::map(app.device,app.bufferMemory[1]));
-    std::cout << *out << std::endl;
+    // std::cout << *out << std::endl;
     ASSERT_NEAR(*out,172.988438,EPSILON); // 285 * 5 * 21
-    //assert(false);
 }
 
 TEST(SNRM2_F, random) {
@@ -544,11 +538,11 @@ TEST(SNRM2_F, random) {
         );
         float* out = static_cast<float*>(Utility::map(app.device,app.bufferMemory[1]));
         float sum = 0;
-        for(uint32_t i = 0; i < size; ++i) {
+        for(uint32_t j = 0; j < size; ++j) {
             //std::cout << out[i] << std::endl;
-            sum += data[0][i] * data[0][i];
+            sum += data[0][j] * data[0][j];
         }
-        std::cout << *out << std::endl;
+        // std::cout << *out << std::endl;
         ASSERT_NEAR(*out,sqrt(sum),EPSILON);
     }
 }
@@ -578,9 +572,8 @@ TEST(SASUM_F, one) {
         new uint32_t[3]{ WORKGROUP_SIZE,1,1 } // Workgroup sizes
     );
     float* out = static_cast<float*>(Utility::map(app.device,app.bufferMemory[1]));
-    std::cout << *out << std::endl;
+    // std::cout << *out << std::endl;
     ASSERT_NEAR(*out,45.0,EPSILON);
-    //assert(false);
 }
 
 // 2 subgroups worth (70)
@@ -613,9 +606,8 @@ TEST(SASUM_F, two) {
         new uint32_t[3]{ WORKGROUP_SIZE,1,1 } // Workgroup sizes
     );
     float* out = static_cast<float*>(Utility::map(app.device,app.bufferMemory[1]));
-    std::cout << *out << std::endl;
+    // std::cout << *out << std::endl;
     ASSERT_NEAR(*out,315,EPSILON); // 45*7
-    //assert(false);
 }
 
 // 2 workgroups worth (1050)
@@ -663,9 +655,8 @@ TEST(SASUM_F, three) {
         new uint32_t[3]{ WORKGROUP_SIZE,1,1 } // Workgroup sizes
     );
     float* out = static_cast<float*>(Utility::map(app.device,app.bufferMemory[1]));
-    std::cout << *out << std::endl;
+    // std::cout << *out << std::endl;
     ASSERT_NEAR(*out,4725.0,EPSILON); // 45 * 5 * 21
-    //assert(false);
 }
 
 TEST(SASUM_F, random) {
@@ -700,11 +691,11 @@ TEST(SASUM_F, random) {
         );
         float* out = static_cast<float*>(Utility::map(app.device,app.bufferMemory[1]));
         float sum = 0;
-        for(uint32_t i = 0; i < size; ++i) {
+        for(uint32_t j = 0; j < size; ++j) {
             //std::cout << out[i] << std::endl;
-            sum += abs(data[0][i]);
+            sum += abs(data[0][j]);
         }
-        std::cout << *out << std::endl;
+        // std::cout << *out << std::endl;
         ASSERT_NEAR(*out,sum,EPSILON);
     }
 }
@@ -734,12 +725,11 @@ TEST(ISAMAX_F, one) {
         new uint32_t[3]{ WORKGROUP_SIZE,1,1 } // Workgroup sizes
     );
     uint32_t* out = static_cast<uint32_t*>(Utility::map(app.device,app.bufferMemory[1]));
-    std::cout << *out << std::endl;
+    // std::cout << *out << std::endl;
     ASSERT_EQ(*out,9);
-    //assert(false);
 }
 
-// 1 subgroup worth (70)
+// 2 subgroups worth (70)
 TEST(ISAMAX_F, two) {
     uint32_t const numBuffers = 2;
     uint32_t const numPushConstants = 1;
@@ -769,9 +759,8 @@ TEST(ISAMAX_F, two) {
         new uint32_t[3]{ WORKGROUP_SIZE,1,1 } // Workgroup sizes
     );
     uint32_t* out = static_cast<uint32_t*>(Utility::map(app.device,app.bufferMemory[1]));
-    std::cout << *out << std::endl;
+    // std::cout << *out << std::endl;
     ASSERT_EQ(*out,59);
-    //assert(false);
 }
 
 TEST(ISAMAX_F, random) {
@@ -808,15 +797,165 @@ TEST(ISAMAX_F, random) {
         uint32_t* out = static_cast<uint32_t*>(Utility::map(app.device,app.bufferMemory[1]));
         float maxValue = abs(data[0][0]);
         uint32_t maxIndex = 0;
-        for(uint32_t i = 0; i < size; ++i) {
-            //std::cout << out[i] << std::endl;
-            float absValue = abs(data[0][i]);
+        for(uint32_t j = 1; j < size; ++j) {
+            // std::cout << out[i] << std::endl;
+            float absValue = abs(data[0][j]);
             if (absValue > maxValue) {
                 maxValue = absValue;
-                maxIndex = i;
+                maxIndex = j;
             }
         }
-        std::cout << *out << std::endl;
+        // std::cout << *out << std::endl;
         ASSERT_EQ(*out,maxIndex);
+    }
+}
+
+// sgemv
+// -----------------------------------------
+
+// 1 subgroup worth (10)
+TEST(SGEMV_F, one) {
+    uint32_t const numBuffers = 3;
+    uint32_t const numPushConstants = 3;
+    uint32_t const size = 10;
+
+    float** bufferData = new float*[numBuffers];
+    bufferData[0] = new float[size]{ 0,1,2,3,4,5,6,7,8,9 };
+    bufferData[1] = new float[size]{ 0,1,2,3,4,5,6,7,8,9 };
+    bufferData[2] = new float[size*size]{
+        0,1,2,3,4,5,6,7,8,9,
+        0,1,2,3,4,5,6,7,8,9,
+        0,1,2,3,4,5,6,7,8,9,
+        0,1,2,3,4,5,6,7,8,9,
+        0,1,2,3,4,5,6,7,8,9,
+        0,1,2,3,4,5,6,7,8,9,
+        0,1,2,3,4,5,6,7,8,9,
+        0,1,2,3,4,5,6,7,8,9,
+        0,1,2,3,4,5,6,7,8,9,
+        0,1,2,3,4,5,6,7,8,9
+    };
+    
+
+    char const shader[] = "../../../glsl/sgemv_f.spv";
+
+    ComputeApp<numPushConstants> app = ComputeApp<numPushConstants>(
+        shader,
+        numBuffers, //  Number of buffers
+        new uint32_t[numBuffers]{ size, size, size*size }, // Buffer sizes
+        bufferData, // Buffer data
+        std::array<std::variant<uint32_t,float>, numPushConstants> { 1.0F, 1.0F, size }, // Push constants
+        new uint32_t[3]{ 1,1,1 }, // Invocations
+        new uint32_t[3]{ WORKGROUP_SIZE,1,1 } // Workgroup sizes
+    );
+    float expected[size] = { 
+        285.0F, 286.0F, 287.0F, 288.0F, 289.0F, 290.0F, 291.0F, 292.0F, 293.0F, 294.0F
+    };
+    float* out = static_cast<float*>(Utility::map(app.device,app.bufferMemory[1]));
+    for(uint32_t i = 0; i < size; ++i) {
+        //std::cout << out[i] << std::endl;
+        ASSERT_NEAR(expected[i],out[i],EPSILON);
+    }
+}
+
+// 1 subgroup worth (10) non-1 scalars
+TEST(SGEMV_F, two) {
+    uint32_t const numBuffers = 3;
+    uint32_t const numPushConstants = 3;
+    uint32_t const size = 10;
+
+    float** bufferData = new float*[numBuffers];
+    bufferData[0] = new float[size]{ 0,1,2,3,4,5,6,7,8,9 };
+    bufferData[1] = new float[size]{ 0,1,2,3,4,5,6,7,8,9 };
+    bufferData[2] = new float[size*size]{
+        0,1,2,3,4,5,6,7,8,9,
+        0,1,2,3,4,5,6,7,8,9,
+        0,1,2,3,4,5,6,7,8,9,
+        0,1,2,3,4,5,6,7,8,9,
+        0,1,2,3,4,5,6,7,8,9,
+        0,1,2,3,4,5,6,7,8,9,
+        0,1,2,3,4,5,6,7,8,9,
+        0,1,2,3,4,5,6,7,8,9,
+        0,1,2,3,4,5,6,7,8,9,
+        0,1,2,3,4,5,6,7,8,9
+    };
+    
+
+    char const shader[] = "../../../glsl/sgemv_f.spv";
+
+    ComputeApp<numPushConstants> app = ComputeApp<numPushConstants>(
+        shader,
+        numBuffers, //  Number of buffers
+        new uint32_t[numBuffers]{ size, size, size*size }, // Buffer sizes
+        bufferData, // Buffer data
+        std::array<std::variant<uint32_t,float>, numPushConstants> { 0.9248F, 1.73F, size }, // Push constants
+        new uint32_t[3]{ 1,1,1 }, // Invocations
+        new uint32_t[3]{ WORKGROUP_SIZE,1,1 } // Workgroup sizes
+    );
+    float expected[size] = { 
+        263.568F, 265.298F, 267.028F, 268.758F, 270.488F, 272.218F, 273.948F, 275.678F, 277.408F, 279.138F
+    };
+    float* out = static_cast<float*>(Utility::map(app.device,app.bufferMemory[1]));
+    for(uint32_t i = 0; i < size; ++i) {
+        //std::cout << out[i] << std::endl;
+        ASSERT_NEAR(expected[i],out[i],EPSILON);
+    }
+}
+
+TEST(SGEMV_F, random) {
+    srand((unsigned int)time(NULL));
+    uint32_t const numBuffers = 3;
+    uint32_t const numPushConstants = 3;
+
+    for(uint32_t i=0;i<RAND_RUNS;++i) {
+        uint32_t max = 10;//WORKGROUP_SIZE*WORKGROUP_SIZE;
+        uint32_t min = 5;//WORKGROUP_SIZE+1;
+        uint32_t size = min + (rand() % uint32_t(max - min + 1));
+
+        float** data = new float*[numBuffers];
+        data[0] = new float[size];
+        data[1] = new float[size];
+        data[2] = new float[size*size];
+
+        for(uint32_t j=0;j<size;++j) {
+            data[0][j] = float(rand())/float(RAND_MAX);
+            data[1][j] = float(rand())/float(RAND_MAX);
+            const uint32_t row = size*j;
+            for(uint32_t k=0;k<size;++k) {
+                data[2][row+k] = float(rand())/float(RAND_MAX);
+            }
+        }
+
+        float alpha = float(rand())/float(RAND_MAX);;
+        float beta = float(rand())/float(RAND_MAX);
+
+        char const shader[] = "../../../glsl/sgemv_f.spv";
+
+        ComputeApp<numPushConstants> app = ComputeApp<numPushConstants>(
+            shader,
+            numBuffers, //  Number of buffers
+            new uint32_t[numBuffers]{ size, size, size*size }, // Buffer sizes
+            data, // Buffer data
+            std::array<std::variant<uint32_t,float>, numPushConstants> { alpha, beta, size }, // Push constants
+            new uint32_t[3]{ 1,1,1 }, // Invocations
+            new uint32_t[3]{ WORKGROUP_SIZE,1,1 } // Workgroup sizes
+        );
+
+        float expected[size];
+        for(uint32_t j=0;j<size;++j) {
+            float rSum = 0;
+            const uint32_t row = size*j;
+            for(uint32_t k=0;k<size;++k) {
+                rSum += data[2][row+k] * data[0][k];
+            }
+            rSum *= alpha;
+            rSum += beta * data[1][j];
+            expected[j] = rSum;
+        }
+
+        float* out = static_cast<float*>(Utility::map(app.device,app.bufferMemory[1]));
+        for(uint32_t j = 0; j < size; ++j) {
+            // std::cout << out[j] << std::endl;
+            ASSERT_NEAR(expected[j],out[j],EPSILON);
+        }
     }
 }

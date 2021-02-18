@@ -1,0 +1,78 @@
+#version 450
+#extension GL_KHR_shader_subgroup_arithmetic : enable
+
+// alpha*A*x + beta*y
+
+layout(local_size_x = 1024, local_size_y = 1, local_size_z = 1) in;
+
+layout(binding = 0) buffer Buffer0 {
+    float x[];
+};
+layout(binding = 1) buffer Buffer1 {
+    float y[];
+};
+
+layout(r32f,binding = 2) uniform image2D A;
+
+layout(push_constant) uniform PushConsts {
+    float alpha; // TODO Can these be declared on the same line?
+    float beta;
+};
+
+shared float sdata[16]; // gl_WorkGroupSize.x / gl_SubgroupSize.x = 1024 / 64 = 16;
+
+// This should only be called with 1 workgroup
+// gl_LocalInvocationID.x === gl_GlobalInvocationID.x
+void main() {
+    const uint indx = gl_LocalInvocationID.x;
+    const ivec2 dims = imageSize(A);
+    const uint rows = uint(ceil(dims.y / float(gl_WorkGroupSize.x)));
+
+    for(uint m=0;m<rows;++m) {
+        float rSum = 0;
+        for(uint n=0;n<dims.x;++n) {
+            rSum += imageLoad(A,ivec2(n,m)).r * x[n];
+        }
+        rSum *= alpha;
+        rSum += beta * y[m];
+
+        y[m] = rSum;
+    }
+
+    // uint x_indx = gl_GlobalInvocationID.x;
+    // uint y_indx = gl_GlobalInvocationID.y;
+
+    // ivec2 size = ivec2(imageSize(A));
+
+    // // TODO Is this actually neccessary?
+    // if (x_indx < size.x && y_indx < size.y) {
+    //     float sum = x[y_indx] * imageLoad(A,ivec2(x_indx,y_indx)).x;
+
+    //     sum = subgroupInclusiveAdd(sum);
+
+    //     // Last invocation in subgroup, or last invocation in row.
+    //     //
+    //     // The last invocation in row is the special case with the last subgroup in the row where it is likely it
+    //     //  will contain inactive invocations, thus the last invocation in the subgroup will be out of bounds.
+    //     if (gl_SubgroupInvocationID == gl_SubgroupSize - 1 || x_indx == size.x-1) {
+    //         sdata[gl_SubgroupID] = alpha * sum;
+    //     }
+
+    //     barrier();
+
+    //     // Sums all values sdata[0:sumSubGroupSize] (inclusive)
+    //     if (gl_SubgroupID == 0) { // This only works when the subgroup size is >= the number of subgroups (which in practice it always is).
+    //         sum = gl_SubgroupInvocationID < gl_NumSubgroups ? sdata[gl_SubgroupInvocationID] : 0;
+    //         sum = subgroupAdd(sum);
+    //     }
+
+    //     // For 1 invocation in each matrix row, add vector value to row sum
+    //     if (x_indx == 0) y[y_indx] *= beta; // This must occur before `atomicAdd(outputs[y_indx],sum);`
+
+    //     barrier();
+
+    //     // For 1 invocation in each wrokgroup add the workgroup sum to y value in the row to which the workgroup belongs
+    //     if (gl_LocalInvocationID.x == 0) atomicAdd(y[y_indx],sum);
+        
+    // }
+}

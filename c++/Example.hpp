@@ -233,7 +233,7 @@ namespace Utility {
 
         // Sets push constants
         if(pushConstantSize.has_value()) {
-            char* bytes = new char[pushConstantSize.value()];
+            std::byte* bytes = new std::byte[pushConstantSize.value()];
             uint32_t byteCounter = 0;
             for(uint32_t i=0;i<pushConstants.size();++i) {
                 if(float* flt = std::get_if<float>(&pushConstants[i])) {

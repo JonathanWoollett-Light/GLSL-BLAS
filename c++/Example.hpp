@@ -192,8 +192,8 @@ namespace Utility {
         VkPipeline& pipeline,
         VkPipelineLayout& pipelineLayout,
         VkDescriptorSet& descriptorSet,
-        uint32_t const* dims, // [x,y,z],
-        uint32_t const* dimLengths, // [local_size_x, local_size_y, local_size_z]
+        std::array<uint32_t,3> dims, // [x,y,z],
+        std::array<uint32_t,3> dimLengths, // [local_size_x, local_size_y, local_size_z]
         std::optional<uint32_t> const pushConstantSize,
         std::array<std::variant<uint32_t,float>,NumPushConstants>& pushConstants
     ) {
@@ -316,8 +316,8 @@ class ComputeApp {
             uint32_t const* bufferSize,
             float** bufferData,
             std::array<std::variant<uint32_t,float>, NumPushConstants> pushConstant,
-            uint32_t* dims, // [x,y,z],
-            uint32_t const* dimLengths // [local_size_x, local_size_y, local_size_z]
+            std::array<uint32_t,3> dims, // [x,y,z],
+            std::array<uint32_t,3> dimLengths // [local_size_x, local_size_y, local_size_z]
         )  {
             this->numBuffers = numBuffers;
 

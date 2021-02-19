@@ -36,8 +36,8 @@ TEST(SSCAL, one) {
         new uint32_t[numBuffers]{ size }, // Buffer sizes
         data, // Buffer data
         std::array<std::variant<uint32_t,float>, numPushConstants> { 1.0F }, // Push constants
-        new uint32_t[3]{ size,1,1 }, // Invocations
-        new uint32_t[3]{ WORKGROUP_SIZE,1,1 } // Workgroup sizes
+        std::array<uint32_t,3> { size,1,1 }, // Invocations
+        std::array<uint32_t,3> { WORKGROUP_SIZE,1,1 } // Workgroup sizes
     );
 
     float* out = static_cast<float*>(Utility::map(app.device,app.bufferMemory[0]));
@@ -62,8 +62,8 @@ TEST(SSCAL, two) {
         new uint32_t[numBuffers]{ size }, // Buffer sizes
         data, // Buffer data
         std::array<std::variant<uint32_t,float>, numPushConstants> { 2.0F }, // Push constants
-        new uint32_t[3]{ size,1,1 }, // Invocations
-        new uint32_t[3]{ WORKGROUP_SIZE,1,1 } // Workgroup sizes
+        std::array<uint32_t,3> { size,1,1 }, // Invocations
+        std::array<uint32_t,3> { WORKGROUP_SIZE,1,1 } // Workgroup sizes
     );
 
     float* out = static_cast<float*>(Utility::map(app.device,app.bufferMemory[0]));
@@ -98,8 +98,8 @@ TEST(SSCAL, random) {
             new uint32_t[numBuffers]{ size }, // Buffer sizes
             data, // Buffer data
             std::array<std::variant<uint32_t,float>, numPushConstants> { pushConstant }, // Push constants
-            new uint32_t[3]{ size,1,1 }, // Invocations
-            new uint32_t[3]{ WORKGROUP_SIZE,1,1 } // Workgroup sizes
+            std::array<uint32_t,3> { size,1,1 }, // Invocations
+            std::array<uint32_t,3> { WORKGROUP_SIZE,1,1 } // Workgroup sizes
         );
 
         float* out = static_cast<float*>(Utility::map(app.device,app.bufferMemory[0]));
@@ -129,8 +129,8 @@ TEST(SAXPY, one) {
         new uint32_t[numBuffers]{ size, size }, // Buffer sizes
         data, // Buffer data
         std::array<std::variant<uint32_t,float>, numPushConstants> { 1.0F }, // Push constants
-        new uint32_t[3]{ size,1,1 }, // Invocations
-        new uint32_t[3]{ WORKGROUP_SIZE,1,1 } // Workgroup sizes
+        std::array<uint32_t,3> { size,1,1 }, // Invocations
+        std::array<uint32_t,3> { WORKGROUP_SIZE,1,1 } // Workgroup sizes
     );
 
     float* out = static_cast<float*>(Utility::map(app.device,app.bufferMemory[1]));
@@ -156,8 +156,8 @@ TEST(SAXPY, two) {
         new uint32_t[numBuffers]{ size, size }, // Buffer sizes
         data, // Buffer data
         std::array<std::variant<uint32_t,float>, numPushConstants> { 2.0F }, // Push constants
-        new uint32_t[3]{ size,1,1 }, // Invocations
-        new uint32_t[3]{ WORKGROUP_SIZE,1,1 } // Workgroup sizes
+        std::array<uint32_t,3> { size,1,1 }, // Invocations
+        std::array<uint32_t,3> { WORKGROUP_SIZE,1,1 } // Workgroup sizes
     );
 
     float* out = static_cast<float*>(Utility::map(app.device,app.bufferMemory[1]));
@@ -195,8 +195,8 @@ TEST(SAXPY, random) {
             new uint32_t[numBuffers]{ size, size }, // Buffer sizes
             data, // Buffer data
             std::array<std::variant<uint32_t,float>, numPushConstants> { pushConstant }, // Push constants
-            new uint32_t[3]{ size,1,1 }, // Invocations
-            new uint32_t[3]{ WORKGROUP_SIZE,1,1 } // Workgroup sizes
+            std::array<uint32_t,3> { size,1,1 }, // Invocations
+            std::array<uint32_t,3> { WORKGROUP_SIZE,1,1 } // Workgroup sizes
         );
 
         float* out = static_cast<float*>(Utility::map(app.device,app.bufferMemory[1]));
@@ -229,8 +229,8 @@ TEST(SDOT_F, one) {
         new uint32_t[numBuffers]{ size, size, 1 }, // Buffer sizes
         data, // Buffer data
         std::array<std::variant<uint32_t,float>, numPushConstants> { size }, // Push constants
-        new uint32_t[3]{ 1,1,1 }, // Invocations
-        new uint32_t[3]{ WORKGROUP_SIZE,1,1 } // Workgroup sizes
+        std::array<uint32_t,3> { 1,1,1 }, // Invocations
+        std::array<uint32_t,3> { WORKGROUP_SIZE,1,1 } // Workgroup sizes
     );
     float* out = static_cast<float*>(Utility::map(app.device,app.bufferMemory[2]));
     // std::cout << *out << std::endl;
@@ -271,8 +271,8 @@ TEST(SDOT_F, two) {
         new uint32_t[numBuffers]{ size, size, 1 }, // Buffer sizes
         data, // Buffer data
         std::array<std::variant<uint32_t,float>, numPushConstants> { size }, // Push constants
-        new uint32_t[3]{ 1,1,1 }, // Invocations
-        new uint32_t[3]{ WORKGROUP_SIZE,1,1 } // Workgroup sizes
+        std::array<uint32_t,3> { 1,1,1 }, // Invocations
+        std::array<uint32_t,3> { WORKGROUP_SIZE,1,1 } // Workgroup sizes
     );
     float* out = static_cast<float*>(Utility::map(app.device,app.bufferMemory[2]));
     // std::cout << *out << std::endl;
@@ -344,8 +344,8 @@ TEST(SDOT_F, three) {
         new uint32_t[numBuffers]{ size, size, 1 }, // Buffer sizes
         data, // Buffer data
         std::array<std::variant<uint32_t,float>, numPushConstants> { size }, // Push constants
-        new uint32_t[3]{ 1,1,1 }, // Invocations
-        new uint32_t[3]{ WORKGROUP_SIZE,1,1 } // Workgroup sizes
+        std::array<uint32_t,3> { 1,1,1 }, // Invocations
+        std::array<uint32_t,3> { WORKGROUP_SIZE,1,1 } // Workgroup sizes
     );
     float* out = static_cast<float*>(Utility::map(app.device,app.bufferMemory[2]));
     // std::cout << *out << std::endl;
@@ -380,8 +380,8 @@ TEST(SDOT_F, random) {
             new uint32_t[numBuffers]{ size, size, 1 }, // Buffer sizes
             data, // Buffer data
             std::array<std::variant<uint32_t,float>, numPushConstants> { size }, // Push constants
-            new uint32_t[3]{ 1,1,1 }, // Invocations
-            new uint32_t[3]{ WORKGROUP_SIZE,1,1 } // Workgroup sizes
+            std::array<uint32_t,3> { 1,1,1 }, // Invocations
+            std::array<uint32_t,3> { WORKGROUP_SIZE,1,1 } // Workgroup sizes
         );
         float* out = static_cast<float*>(Utility::map(app.device,app.bufferMemory[2]));
         float sum = 0;
@@ -415,8 +415,8 @@ TEST(SNRM2_F, one) {
         new uint32_t[numBuffers]{ size, 1 }, // Buffer sizes
         data, // Buffer data
         std::array<std::variant<uint32_t,float>, numPushConstants> { size }, // Push constants
-        new uint32_t[3]{ 1,1,1 }, // Invocations
-        new uint32_t[3]{ WORKGROUP_SIZE,1,1 } // Workgroup sizes
+        std::array<uint32_t,3> { 1,1,1 }, // Invocations
+        std::array<uint32_t,3> { WORKGROUP_SIZE,1,1 } // Workgroup sizes
     );
     float* out = static_cast<float*>(Utility::map(app.device,app.bufferMemory[1]));
     // std::cout << *out << std::endl;
@@ -449,8 +449,8 @@ TEST(SNRM2_F, two) {
         new uint32_t[numBuffers]{ size, 1 }, // Buffer sizes
         data, // Buffer data
         std::array<std::variant<uint32_t,float>, numPushConstants> { size }, // Push constants
-        new uint32_t[3]{ 1,1,1 }, // Invocations
-        new uint32_t[3]{ WORKGROUP_SIZE,1,1 } // Workgroup sizes
+        std::array<uint32_t,3> { 1,1,1 }, // Invocations
+        std::array<uint32_t,3> { WORKGROUP_SIZE,1,1 } // Workgroup sizes
     );
     float* out = static_cast<float*>(Utility::map(app.device,app.bufferMemory[1]));
     // std::cout << *out << std::endl;
@@ -498,8 +498,8 @@ TEST(SNRM2_F, three) {
         new uint32_t[numBuffers]{ size, 1 }, // Buffer sizes
         data, // Buffer data
         std::array<std::variant<uint32_t,float>, numPushConstants> { size }, // Push constants
-        new uint32_t[3]{ 1,1,1 }, // Invocations
-        new uint32_t[3]{ WORKGROUP_SIZE,1,1 } // Workgroup sizes
+        std::array<uint32_t,3> { 1,1,1 }, // Invocations
+        std::array<uint32_t,3> { WORKGROUP_SIZE,1,1 } // Workgroup sizes
     );
     float* out = static_cast<float*>(Utility::map(app.device,app.bufferMemory[1]));
     // std::cout << *out << std::endl;
@@ -533,8 +533,8 @@ TEST(SNRM2_F, random) {
             new uint32_t[numBuffers]{ size, 1 }, // Buffer sizes
             data, // Buffer data
             std::array<std::variant<uint32_t,float>, numPushConstants> { size }, // Push constants
-            new uint32_t[3]{ 1,1,1 }, // Invocations
-            new uint32_t[3]{ WORKGROUP_SIZE,1,1 } // Workgroup sizes
+            std::array<uint32_t,3> { 1,1,1 }, // Invocations
+            std::array<uint32_t,3> { WORKGROUP_SIZE,1,1 } // Workgroup sizes
         );
         float* out = static_cast<float*>(Utility::map(app.device,app.bufferMemory[1]));
         float sum = 0;
@@ -568,8 +568,8 @@ TEST(SASUM_F, one) {
         new uint32_t[numBuffers]{ size, 1 }, // Buffer sizes
         data, // Buffer data
         std::array<std::variant<uint32_t,float>, numPushConstants> { size }, // Push constants
-        new uint32_t[3]{ 1,1,1 }, // Invocations
-        new uint32_t[3]{ WORKGROUP_SIZE,1,1 } // Workgroup sizes
+        std::array<uint32_t,3> { 1,1,1 }, // Invocations
+        std::array<uint32_t,3> { WORKGROUP_SIZE,1,1 } // Workgroup sizes
     );
     float* out = static_cast<float*>(Utility::map(app.device,app.bufferMemory[1]));
     // std::cout << *out << std::endl;
@@ -602,8 +602,8 @@ TEST(SASUM_F, two) {
         new uint32_t[numBuffers]{ size, 1 }, // Buffer sizes
         data, // Buffer data
         std::array<std::variant<uint32_t,float>, numPushConstants> { size }, // Push constants
-        new uint32_t[3]{ 1,1,1 }, // Invocations
-        new uint32_t[3]{ WORKGROUP_SIZE,1,1 } // Workgroup sizes
+        std::array<uint32_t,3> { 1,1,1 }, // Invocations
+        std::array<uint32_t,3> { WORKGROUP_SIZE,1,1 } // Workgroup sizes
     );
     float* out = static_cast<float*>(Utility::map(app.device,app.bufferMemory[1]));
     // std::cout << *out << std::endl;
@@ -651,8 +651,8 @@ TEST(SASUM_F, three) {
         new uint32_t[numBuffers]{ size, 1 }, // Buffer sizes
         data, // Buffer data
         std::array<std::variant<uint32_t,float>, numPushConstants> { size }, // Push constants
-        new uint32_t[3]{ 1,1,1 }, // Invocations
-        new uint32_t[3]{ WORKGROUP_SIZE,1,1 } // Workgroup sizes
+        std::array<uint32_t,3> { 1,1,1 }, // Invocations
+        std::array<uint32_t,3> { WORKGROUP_SIZE,1,1 } // Workgroup sizes
     );
     float* out = static_cast<float*>(Utility::map(app.device,app.bufferMemory[1]));
     // std::cout << *out << std::endl;
@@ -686,8 +686,8 @@ TEST(SASUM_F, random) {
             new uint32_t[numBuffers]{ size, 1 }, // Buffer sizes
             data, // Buffer data
             std::array<std::variant<uint32_t,float>, numPushConstants> { size }, // Push constants
-            new uint32_t[3]{ 1,1,1 }, // Invocations
-            new uint32_t[3]{ WORKGROUP_SIZE,1,1 } // Workgroup sizes
+            std::array<uint32_t,3> { 1,1,1 }, // Invocations
+            std::array<uint32_t,3> { WORKGROUP_SIZE,1,1 } // Workgroup sizes
         );
         float* out = static_cast<float*>(Utility::map(app.device,app.bufferMemory[1]));
         float sum = 0;
@@ -721,8 +721,8 @@ TEST(ISAMAX_F, one) {
         new uint32_t[numBuffers]{ size, 1 }, // Buffer sizes
         data, // Buffer data
         std::array<std::variant<uint32_t,float>, numPushConstants> { size }, // Push constants
-        new uint32_t[3]{ 1,1,1 }, // Invocations
-        new uint32_t[3]{ WORKGROUP_SIZE,1,1 } // Workgroup sizes
+        std::array<uint32_t,3> { 1,1,1 }, // Invocations
+        std::array<uint32_t,3> { WORKGROUP_SIZE,1,1 } // Workgroup sizes
     );
     uint32_t* out = static_cast<uint32_t*>(Utility::map(app.device,app.bufferMemory[1]));
     // std::cout << *out << std::endl;
@@ -755,8 +755,8 @@ TEST(ISAMAX_F, two) {
         new uint32_t[numBuffers]{ size, 1 }, // Buffer sizes
         data, // Buffer data
         std::array<std::variant<uint32_t,float>, numPushConstants> { size }, // Push constants
-        new uint32_t[3]{ 1,1,1 }, // Invocations
-        new uint32_t[3]{ WORKGROUP_SIZE,1,1 } // Workgroup sizes
+        std::array<uint32_t,3> { 1,1,1 }, // Invocations
+        std::array<uint32_t,3> { WORKGROUP_SIZE,1,1 } // Workgroup sizes
     );
     uint32_t* out = static_cast<uint32_t*>(Utility::map(app.device,app.bufferMemory[1]));
     // std::cout << *out << std::endl;
@@ -790,8 +790,8 @@ TEST(ISAMAX_F, random) {
             new uint32_t[numBuffers]{ size, 1 }, // Buffer sizes
             data, // Buffer data
             std::array<std::variant<uint32_t,float>, numPushConstants> { size }, // Push constants
-            new uint32_t[3]{ 1,1,1 }, // Invocations
-            new uint32_t[3]{ WORKGROUP_SIZE,1,1 } // Workgroup sizes
+            std::array<uint32_t,3> { 1,1,1 }, // Invocations
+            std::array<uint32_t,3> { WORKGROUP_SIZE,1,1 } // Workgroup sizes
         );
 
         uint32_t* out = static_cast<uint32_t*>(Utility::map(app.device,app.bufferMemory[1]));
@@ -844,8 +844,8 @@ TEST(SGEMV_F, one) {
         new uint32_t[numBuffers]{ size, size, size*size }, // Buffer sizes
         bufferData, // Buffer data
         std::array<std::variant<uint32_t,float>, numPushConstants> { 1.0F, 1.0F, size }, // Push constants
-        new uint32_t[3]{ 1,1,1 }, // Invocations
-        new uint32_t[3]{ WORKGROUP_SIZE,1,1 } // Workgroup sizes
+        std::array<uint32_t,3> { 1,1,1 }, // Invocations
+        std::array<uint32_t,3> { WORKGROUP_SIZE,1,1 } // Workgroup sizes
     );
     float expected[size] = { 
         285.0F, 286.0F, 287.0F, 288.0F, 289.0F, 290.0F, 291.0F, 292.0F, 293.0F, 294.0F
@@ -888,8 +888,8 @@ TEST(SGEMV_F, two) {
         new uint32_t[numBuffers]{ size, size, size*size }, // Buffer sizes
         bufferData, // Buffer data
         std::array<std::variant<uint32_t,float>, numPushConstants> { 0.9248F, 1.73F, size }, // Push constants
-        new uint32_t[3]{ 1,1,1 }, // Invocations
-        new uint32_t[3]{ WORKGROUP_SIZE,1,1 } // Workgroup sizes
+        std::array<uint32_t,3> { 1,1,1 }, // Invocations
+        std::array<uint32_t,3> { WORKGROUP_SIZE,1,1 } // Workgroup sizes
     );
     float expected[size] = { 
         263.568F, 265.298F, 267.028F, 268.758F, 270.488F, 272.218F, 273.948F, 275.678F, 277.408F, 279.138F
@@ -936,8 +936,8 @@ TEST(SGEMV_F, random) {
             new uint32_t[numBuffers]{ size, size, size*size }, // Buffer sizes
             data, // Buffer data
             std::array<std::variant<uint32_t,float>, numPushConstants> { alpha, beta, size }, // Push constants
-            new uint32_t[3]{ 1,1,1 }, // Invocations
-            new uint32_t[3]{ WORKGROUP_SIZE,1,1 } // Workgroup sizes
+            std::array<uint32_t,3> { 1,1,1 }, // Invocations
+            std::array<uint32_t,3> { WORKGROUP_SIZE,1,1 } // Workgroup sizes
         );
 
         float expected[size];

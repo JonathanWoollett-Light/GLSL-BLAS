@@ -1,18 +1,18 @@
 #pragma once
 
 #include <vulkan/vulkan.h> // Vulkan
-#include <optional> // optional
+#include <optional> // std::optional
 #include <string.h> // strcmp
 #include <assert.h> // assert
 #include <cmath> // ceil
 #include <variant> // std::variant
 #include <array> // std::array
 #include <numeric> // std::accumulate
+#include <algorithm> // std::for_each
+#include <cstring> // std::memcpy
 
 #include <iostream>
 #include <tuple>
-
-//#include <iostream>
 
 #ifdef NDEBUG
 const auto enableValidationLayers = std::nullopt;
@@ -136,14 +136,14 @@ namespace Utility {
         // Sets push constants
         std::optional<uint32_t> pushConstantSize = std::nullopt;
         if(pushConstants.size() != 0) {
-            auto size_fn = [](auto variant) -> uint32_t {
-                using T = std::decay_t<decltype(variant)>;
-                if constexpr (std::is_same_v<uint32_t, T>) { return sizeof(uint32_t); }
-                if constexpr (std::is_same_v<float, T>) { return sizeof(float);}
+            auto size_fn = [](auto const& var) -> size_t {
+                using T = std::decay_t<decltype(var)>;
+                return sizeof(T);
             };
-            pushConstantSize = std::accumulate(pushConstants.begin(),pushConstants.end(),0,
-                [size_fn](uint32_t acc, auto variant) { return std::move(acc) + std::visit(size_fn,variant); }
-            );
+            pushConstantSize = static_cast<uint32_t>(std::accumulate(pushConstants.begin(),pushConstants.end(),
+                std::size_t{ 0 },
+                [size_fn](std::size_t acc, auto var) { return acc + std::visit(size_fn,var); }
+            ));
 
             pipelineLayoutCreateInfo.pushConstantRangeCount = 1;
             pipelineLayoutCreateInfo.pPushConstantRanges = new VkPushConstantRange {
@@ -235,16 +235,13 @@ namespace Utility {
         if(pushConstantSize.has_value()) {
             std::byte* bytes = new std::byte[pushConstantSize.value()];
             uint32_t byteCounter = 0;
-            for(uint32_t i=0;i<pushConstants.size();++i) {
-                if(float* flt = std::get_if<float>(&pushConstants[i])) {
-                    *reinterpret_cast<float*>(bytes+byteCounter) = *flt;
-                    byteCounter += sizeof(float);
-                }
-                else if(uint32_t* uin = std::get_if<uint32_t>(&pushConstants[i])) {
-                    *reinterpret_cast<uint32_t*>(bytes+byteCounter) = *uin;
-                    byteCounter += sizeof(uint32_t);
-                }
-            }
+            std::for_each(pushConstants.begin(),pushConstants.end(), [&](auto const& var) {
+                std::visit([&] (auto const& var) {
+                    using T = std::decay_t<decltype(var)>;
+                    std::memcpy(bytes+byteCounter,static_cast<void const*>(&var),sizeof(T));
+                    byteCounter += sizeof(T);
+                },var);
+            });
             
             vkCmdPushConstants(
                 *commandBuffer, 

@@ -14,7 +14,7 @@ const size_t WORKGROUP_SIZE = 1024;
 const size_t MAX_SIZE = 1000000;
 const size_t MIN_SIZE = 100000;
 
-// TODO This seems extraordinarily large, am I doing something wrong?
+// TODO This seems extremely large, am I doing something wrong?
 //  Also maybe use percentage difference instead.
 const float EPSILON = 0.1F;
 

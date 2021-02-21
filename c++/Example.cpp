@@ -98,7 +98,7 @@ void Utility::getPhysicalDevice(VkInstance const& instance, VkPhysicalDevice& ph
 }
 
 // Gets index of 1st queue family which supports compute
-uint32_t Utility::getComputeQueueFamilyIndex(VkPhysicalDevice const& physicalDevice) {
+size_t Utility::getComputeQueueFamilyIndex(VkPhysicalDevice const& physicalDevice) {
     // Gets number of queue families
     uint32_t queueFamilyCount;
     vkGetPhysicalDeviceQueueFamilyProperties(
@@ -120,13 +120,13 @@ uint32_t Utility::getComputeQueueFamilyIndex(VkPhysicalDevice const& physicalDev
     if (itr == queueFamilies.end()) {
         throw std::runtime_error("No compute queue family");
     }
-    return static_cast<uint32_t>(std::distance(queueFamilies.begin(), itr));
+    return std::distance(queueFamilies.begin(), itr);
 }
 
 // Creates logical device
 void Utility::createDevice(
     VkPhysicalDevice const& physicalDevice,
-    uint32_t& queueFamilyIndex,
+    size_t& queueFamilyIndex,
     VkDevice& device,
     VkQueue& queue
 ) {
@@ -135,7 +135,7 @@ void Utility::createDevice(
     // Device queue info
     VkDeviceQueueCreateInfo queueCreateInfo = {
         .sType = VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO,
-        .queueFamilyIndex = queueFamilyIndex,
+        .queueFamilyIndex = static_cast<uint32_t>(queueFamilyIndex),
         .queueCount = 1, // create one queue in this family. We don't need more.
         .pQueuePriorities = new float(1)
     };
@@ -153,16 +153,16 @@ void Utility::createDevice(
 }
 
 // Finds memory type with given properties
-uint32_t Utility::findMemoryType(
+size_t Utility::findMemoryType(
     VkPhysicalDevice const& physicalDevice, 
-    uint32_t const memoryTypeBits, 
+    size_t const memoryTypeBits, 
     VkMemoryPropertyFlags const properties
 ) {
     VkPhysicalDeviceMemoryProperties memoryProperties;
     vkGetPhysicalDeviceMemoryProperties(physicalDevice, &memoryProperties);
 
    // Iterate through memory types available on our physical device
-    for (uint32_t i = 0; i < memoryProperties.memoryTypeCount; ++i) {
+    for (size_t i = 0; i < memoryProperties.memoryTypeCount; ++i) {
         // If our resource supports a memory type, and
         //  a memory type contains all required properties, then
         //  return the index of this memory type
@@ -181,27 +181,10 @@ uint32_t Utility::findMemoryType(
 }
 
 // Creates buffer
-void Utility::createBuffers(
-    VkPhysicalDevice const& physicalDevice,
-    VkDevice const& device,
-    uint32_t const numBuffers,
-    uint32_t const* bufferSize,
-    VkBuffer*& buffer,
-    VkDeviceMemory*& bufferMemory
-) {
-    buffer = new VkBuffer[numBuffers];
-    bufferMemory = new VkDeviceMemory[numBuffers];
-    for(uint32_t i=0;i<numBuffers;++i) {
-        // Creates buffer
-        Utility::createBuffer(physicalDevice, device, bufferSize[i], &buffer[i], &bufferMemory[i]);
-    }
-}
-
-// Creates buffer
 void Utility::createBuffer(
     VkPhysicalDevice const& physicalDevice,
     VkDevice const& device,
-    uint32_t const size,
+    size_t const size,
     VkBuffer * const buffer,
     VkDeviceMemory * const bufferMemory
 ) {
@@ -248,31 +231,14 @@ void Utility::createBuffer(
     VK_CHECK_RESULT(vkBindBufferMemory(device, *buffer, *bufferMemory, 0));
 }
 
-// Fills buffers with data
-// Must be after `createBuffers` but before `createComputePipeline`
-void Utility::fillBuffer(
-    VkDevice const& device,
-    VkDeviceMemory& bufferMemory,
-    float*& bufferData, 
-    uint32_t const bufferSize
-) {
-    void* data = nullptr;
-    // Maps buffer memory into RAM
-    vkMapMemory(device, bufferMemory, 0, VK_WHOLE_SIZE, 0, &data);
-    // Fills buffer memory
-    memcpy(data, bufferData, static_cast<uint32_t>(bufferSize * sizeof(float)));
-    // Un-maps buffer memory from RAM to device memory
-    vkUnmapMemory(device, bufferMemory);
-}
-
 // Creates descriptor set layout
 void Utility::createDescriptorSetLayout(
     VkDevice const& device,
     VkDescriptorSetLayout* descriptorSetLayout,
-    uint32_t const numBuffers
+    size_t const numBuffers
 ) {
     VkDescriptorSetLayoutBinding* binding = new VkDescriptorSetLayoutBinding[numBuffers];
-    for(uint32_t i=0;i<numBuffers;++i){
+    for(size_t i=0;i<numBuffers;++i){
         binding[i].binding = i; // `layout(binding = 0)`
         binding[i].descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
         // Specifies the number buffers of a binding
@@ -289,7 +255,7 @@ void Utility::createDescriptorSetLayout(
     VkDescriptorSetLayoutCreateInfo descriptorSetLayoutCreateInfo = {
         .sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO,
         // `bindingCount` specifies length of `pBindings` array, in this case 1.
-        .bindingCount = numBuffers,
+        .bindingCount = static_cast<uint32_t>(numBuffers),
         // array of `VkDescriptorSetLayoutBinding`s
         .pBindings = binding
     };
@@ -305,14 +271,14 @@ void Utility::createDescriptorSet(
     VkDevice const& device,
     VkDescriptorPool* descriptorPool,
     VkDescriptorSetLayout* descriptorSetLayout,
-    uint32_t const numBuffers,
+    size_t const numBuffers,
     VkBuffer*& buffer,
     VkDescriptorSet& descriptorSet
 ) {
     // Descriptor type and number
     VkDescriptorPoolSize descriptorPoolSize = {
         .type = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER,
-        .descriptorCount = numBuffers // Number of descriptors
+        .descriptorCount = static_cast<uint32_t>(numBuffers) // Number of descriptors
     };
     // Creates descriptor pool
     // A pool allocates a number of descriptors of each type
@@ -342,7 +308,7 @@ void Utility::createDescriptorSet(
 
     // Binds descriptors to buffers
     VkDescriptorBufferInfo* binding = new VkDescriptorBufferInfo[numBuffers];
-    for(uint32_t i=0;i<numBuffers;++i){
+    for(size_t i=0;i<numBuffers;++i){
         binding[i].buffer = buffer[i];
         binding[i].offset = 0;
         binding[i].range = VK_WHOLE_SIZE; // set to whole size of buffer
@@ -354,7 +320,7 @@ void Utility::createDescriptorSet(
         // write to this descriptor set.
         .dstSet = descriptorSet,
         // update 1 descriptor respective set (we only have 1).
-        .descriptorCount = numBuffers,
+        .descriptorCount = static_cast<uint32_t>(numBuffers),
         // buffer type.
         .descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER,
         // respective buffer.
@@ -366,7 +332,7 @@ void Utility::createDescriptorSet(
 }
 
 // Reads shader file
-std::pair<uint32_t,uint32_t*> Utility::readShader(char const* filename) {
+std::pair<size_t,uint32_t*> Utility::readShader(char const* filename) {
     // std::string path = "../../../";
     // std::cout << "paths:" << std::endl;
     // for (const auto & entry : std::filesystem::directory_iterator(path)) {
@@ -393,12 +359,12 @@ std::pair<uint32_t,uint32_t*> Utility::readShader(char const* filename) {
     // Close file
     fclose(fp);
 
-    // zeros last 0 to 3 bytes
+    // Pads zeros so (filesize%4=0) last 0 to 3 bytes
     for (int i = filesize; i < filesizepadded; i++) {
         str[i] = 0;
     }
 
-    return std::make_pair(filesizepadded,(uint32_t *)str);
+    return std::make_pair(filesizepadded,(uint32_t*)str);
 }
 
 // Runs command buffer

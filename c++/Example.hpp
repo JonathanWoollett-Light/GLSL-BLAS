@@ -37,76 +37,103 @@ namespace Utility {
     // Gets physical device
     void getPhysicalDevice(VkInstance const& instance, VkPhysicalDevice& physicalDevice);
     // Gets an index to a queue family
-     uint32_t getComputeQueueFamilyIndex(VkPhysicalDevice const& physicalDevice);
+     size_t getComputeQueueFamilyIndex(VkPhysicalDevice const& physicalDevice);
     // Creates logical device
     void createDevice(
         VkPhysicalDevice const& physicalDevice,
-        uint32_t& queueFamilyIndex,
+        size_t& queueFamilyIndex,
         VkDevice& device,
         VkQueue& queue
     );
     // Finds the memory type by which we can access memory allocated from the heap
-     uint32_t findMemoryType(
+     size_t findMemoryType(
         VkPhysicalDevice const& physicalDevice,
-        uint32_t const memoryTypeBits,
+        size_t const memoryTypeBits,
         VkMemoryPropertyFlags const properties
-    );
-    // Creates buffers
-    void createBuffers(
-        VkPhysicalDevice const& physicalDevice,
-        VkDevice const& device,
-        uint32_t const numBuffers,
-        uint32_t const* bufferSize,
-        VkBuffer*& buffer,
-        VkDeviceMemory*& bufferMemory
     );
     // Creates buffer
     void createBuffer(
         VkPhysicalDevice const& physicalDevice,
         VkDevice const& device,
-        uint32_t const size,
+        size_t const size,
         VkBuffer * const buffer,
         VkDeviceMemory * const bufferMemory
     );
+    // Creates buffers
+    template<size_t NumBuffers>
+    void createBuffers(
+        VkPhysicalDevice const & physicalDevice,
+        VkDevice const & device,
+        std::array<size_t,NumBuffers> bufferSizes,
+        VkBuffer*& buffer,
+        VkDeviceMemory*& bufferMemory
+    ) {
+        buffer = new VkBuffer[NumBuffers];
+        bufferMemory = new VkDeviceMemory[NumBuffers];
+        for(size_t i=0;i<bufferSizes.size();++i) {
+            // Creates buffer
+            Utility::createBuffer(physicalDevice, device, bufferSizes[i], &buffer[i], &bufferMemory[i]);
+        }
+    }
     // Fills a buffer with given data
+    template <size_t Size>
     void fillBuffer(
-        VkDevice const& device,
+        VkDevice const & device,
         VkDeviceMemory& bufferMemory,
-        float*& bufferData, 
-        uint32_t const bufferSize
-    );
+        std::array<float,Size> const & bufferData
+    )  {
+        void* data = nullptr;
+        // Maps buffer memory into RAM
+        vkMapMemory(device, bufferMemory, 0, VK_WHOLE_SIZE, 0, &data);
+        // Fills buffer memory
+        memcpy(data, bufferData.data(), static_cast<size_t>(Size * sizeof(float)));
+        // Un-maps buffer memory from RAM to device memory
+        vkUnmapMemory(device, bufferMemory);
+    }
+    template <size_t I=0, size_t... Sizes>
+    void fillBuffers(
+        VkDevice const & device,
+        VkDeviceMemory* bufferMemory,
+        std::tuple<std::array<float,Sizes>...> const & data
+    )  {
+        if constexpr(I==sizeof...(Sizes)) { return; }
+        else {
+            Utility::fillBuffer(device,bufferMemory[I],std::get<I>(data));
+            Utility::fillBuffers<I+1>(device,bufferMemory,data);
+        }
+    }
     // Creates descriptor set layout
     void createDescriptorSetLayout(
         VkDevice const& device, 
         VkDescriptorSetLayout* descriptorSetLayout,
-        uint32_t const numBuffers
+        size_t const numBuffers
     );
     // Creates descriptor set
     void createDescriptorSet(
         VkDevice const& device,
         VkDescriptorPool* descriptorPool,
         VkDescriptorSetLayout* descriptorSetLayout,
-        uint32_t const numBuffers,
+        size_t const numBuffers,
         VkBuffer*& buffer,
         VkDescriptorSet& descriptorSet
     );
     // Reads shader file
-    std::pair<uint32_t,uint32_t*> readShader(char const* filename);
+    std::pair<size_t,uint32_t*> readShader(char const* filename);
 
-    template <uint32_t NumPushConstants>
-    constexpr uint32_t pushConstantsSize(std::array<std::variant<uint32_t,float>,NumPushConstants> const& pushConstants) {
+    template <size_t NumPushConstants>
+    constexpr size_t pushConstantsSize(std::array<std::variant<size_t,float>,NumPushConstants> const& pushConstants) {
         auto size_fn = [](auto const& var) -> size_t {
             using T = std::decay_t<decltype(var)>;
             return sizeof(T);
         };
-        return static_cast<uint32_t>(std::accumulate(pushConstants.cbegin(),pushConstants.cend(),
+        return static_cast<size_t>(std::accumulate(pushConstants.cbegin(),pushConstants.cend(),
             std::size_t{ 0 },
             [size_fn](std::size_t acc, auto const var) { return acc + std::visit(size_fn,var); }
         ));
     }
 
     // Creates compute pipeline
-    template <uint32_t PushConstantSize>
+    template <size_t PushConstantSize>
     void createComputePipeline(
         VkDevice const& device,
         char const* shaderFile,
@@ -116,7 +143,7 @@ namespace Utility {
         VkPipeline* pipeline
     ) {
         // Creates shader module (just a wrapper around our shader)
-        // std::pair<uint32_t,uint32_t*> file = readShader(shaderFile); // (length,bytes)
+        // std::pair<size_t,size_t*> file = readShader(shaderFile); // (length,bytes)
         // VkShaderModuleCreateInfo createInfo = {
         //     .sType = VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO,
         //     .codeSize = file.first,
@@ -180,23 +207,23 @@ namespace Utility {
     }
 
     // Creates command buffer
-    template <uint32_t NumPushConstants, uint32_t PushConstantSize>
+    template <size_t PushConstantSize, size_t NumPushConstants>
     void createCommandBuffer(
-        uint32_t queueFamilyIndex,
+        size_t queueFamilyIndex,
         VkDevice& device,
         VkCommandPool* commandPool,
         VkCommandBuffer* commandBuffer,
         VkPipeline& pipeline,
         VkPipelineLayout& pipelineLayout,
         VkDescriptorSet& descriptorSet,
-        std::array<uint32_t,3> dims, // [x,y,z],
-        std::array<uint32_t,3> dimLengths, // [local_size_x, local_size_y, local_size_z]
-        std::array<std::variant<uint32_t,float>,NumPushConstants> const& pushConstants
+        std::array<size_t,3> dims, // [x,y,z],
+        std::array<size_t,3> dimLengths, // [local_size_x, local_size_y, local_size_z]
+        std::array<std::variant<size_t,float>,NumPushConstants> const& pushConstants
     ) {
         // Creates command pool
         VkCommandPoolCreateInfo commandPoolCreateInfo = {
             .sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO,
-            .queueFamilyIndex = queueFamilyIndex // Sets queue family
+            .queueFamilyIndex = static_cast<uint32_t>(queueFamilyIndex) // Sets queue family
         };
         VK_CHECK_RESULT(vkCreateCommandPool(
             device, &commandPoolCreateInfo, nullptr, commandPool
@@ -231,7 +258,7 @@ namespace Utility {
         if constexpr (PushConstantSize > 0) {
             // std::byte* bytes = new std::byte[pushConstantSize];
             std::array<std::byte,PushConstantSize> bytes;
-            uint32_t byteCounter = 0;
+            size_t byteCounter = 0;
             std::for_each(pushConstants.cbegin(),pushConstants.cend(), [&](auto const& var) {
                 std::visit([&] (auto const& var) {
                     using T = std::decay_t<decltype(var)>;
@@ -278,7 +305,11 @@ namespace Utility {
     void* map(VkDevice& device, VkDeviceMemory& bufferMemory);
 }
 
-template <uint32_t NumPushConstants, std::array<std::variant<uint32_t,float>, NumPushConstants> const& pushConstant>
+template <
+    size_t NumPushConstants,
+    std::array<std::variant<size_t,float>, NumPushConstants> const& pushConstant,
+    size_t... BufferSizes
+>
 class ComputeApp {
     // -------------------------------------------------
     // Private members
@@ -287,9 +318,9 @@ class ComputeApp {
         VkInstance instance;                        // Vulkan instance.
         VkPhysicalDevice physicalDevice;            // Physical device (e.g. GPU).
         VkDevice device;                            // Logical device by which we connect to our physical device.
-        uint32_t queueFamilyIndex;                  // Index to a queue family.
+        size_t queueFamilyIndex;                  // Index to a queue family.
         VkQueue queue;                              // Queue.
-        uint32_t numBuffers;                        // Number of buffers (necessary for destruction).
+        size_t numHeldBuffers;                    // Number of buffers (necessary for destruction).
         VkBuffer* buffer;                           // Buffers.
         VkDeviceMemory* bufferMemory;               // Buffer memories.
         VkDescriptorSetLayout descriptorSetLayout;  // Layout of a descriptor set.
@@ -306,13 +337,13 @@ class ComputeApp {
     public:
         ComputeApp(
             char const* shaderFile,
-            uint32_t const numBuffers,
-            uint32_t const* bufferSize,
-            float** bufferData,
-            std::array<uint32_t,3> dims, // [x,y,z],
-            std::array<uint32_t,3> dimLengths // [local_size_x, local_size_y, local_size_z]
+            std::tuple<std::array<float,BufferSizes>...> buffers,
+            std::array<size_t,3> dims, // [x,y,z],
+            std::array<size_t,3> dimLengths // [local_size_x, local_size_y, local_size_z]
         )  {
-            this->numBuffers = numBuffers;
+            constexpr size_t const numBuffers = sizeof...(BufferSizes);
+            
+            this->numHeldBuffers = numBuffers;
 
             // Initialize vulkan:
             Utility::createInstance(this->instance);
@@ -324,23 +355,26 @@ class ComputeApp {
             Utility::createDevice(this->physicalDevice, this->queueFamilyIndex, this->device, this->queue);
 
             // Creates buffers
-            Utility::createBuffers(this->physicalDevice, this->device, numBuffers, bufferSize, this->buffer, this->bufferMemory);
+            Utility::createBuffers<numBuffers>(
+                this->physicalDevice,
+                this->device,
+                std::array<size_t, numBuffers>{ BufferSizes... },
+                this->buffer,
+                this->bufferMemory
+            );
 
-            for(uint32_t i=0;i<numBuffers;++i) {
-                // Fills buffer
-                Utility::fillBuffer(this->device, this->bufferMemory[i], bufferData[i], bufferSize[i]);
-            }
+            Utility::fillBuffers(this->device,this->bufferMemory,buffers);
 
             // Creates descriptor set layout
             Utility::createDescriptorSetLayout(this->device,&this->descriptorSetLayout,numBuffers);
 
             // Creates descriptor set
-            Utility::createDescriptorSet(this->device,&this->descriptorPool,&this->descriptorSetLayout,numBuffers,buffer,this->descriptorSet);
+            Utility::createDescriptorSet(this->device,&this->descriptorPool,&this->descriptorSetLayout,numBuffers,this->buffer,this->descriptorSet);
 
-            constexpr uint32_t const size = Utility::pushConstantsSize<NumPushConstants>(pushConstant);
+            constexpr size_t const pcSize = Utility::pushConstantsSize(pushConstant);
 
             // Creates compute pipeline
-            Utility::createComputePipeline<size>(
+            Utility::createComputePipeline<pcSize>(
                 this->device,
                 shaderFile,
                 &this->computeShaderModule,
@@ -351,7 +385,7 @@ class ComputeApp {
 
             
             // Creates command buffer
-            Utility::createCommandBuffer<NumPushConstants,size>(
+            Utility::createCommandBuffer<pcSize>(
                 this->queueFamilyIndex,
                 this->device,
                 &this->commandPool,
@@ -371,7 +405,7 @@ class ComputeApp {
             );
         }
         ~ComputeApp()  {
-            for(uint32_t i=0;i<numBuffers;++i) {
+            for(size_t i=0;i<numHeldBuffers;++i) {
                 vkFreeMemory(device, bufferMemory[i], nullptr);
                 vkDestroyBuffer(device, buffer[i], nullptr);
             }

@@ -364,7 +364,7 @@ class ComputeApp {
                 pushConstant
             );
 
-            //constexpr uint32_t const sizeTester = Utility::pushConstantsSize<NumPushConstants>(pushConstant); // `Utility::pushConstantsSize` is constexpr
+            constexpr uint32_t const sizeTester = Utility::pushConstantsSize<NumPushConstants>(pushConstant);
             uint32_t const tester = 10U;
             // Creates command buffer
             Utility::createCommandBuffer<NumPushConstants,tester>(

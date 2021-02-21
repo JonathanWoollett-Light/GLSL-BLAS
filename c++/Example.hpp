@@ -65,11 +65,9 @@ namespace Utility {
         VkPhysicalDevice const & physicalDevice,
         VkDevice const & device,
         std::array<size_t,NumBuffers> bufferSizes,
-        VkBuffer*& buffer,
-        VkDeviceMemory*& bufferMemory
+        std::array<VkBuffer,NumBuffers> & buffer,
+        std::array<VkDeviceMemory,NumBuffers> & bufferMemory
     ) {
-        buffer = new VkBuffer[NumBuffers];
-        bufferMemory = new VkDeviceMemory[NumBuffers];
         for(size_t i=0;i<bufferSizes.size();++i) {
             // Creates buffer
             Utility::createBuffer(physicalDevice, device, bufferSizes[i], &buffer[i], &bufferMemory[i]);
@@ -93,7 +91,7 @@ namespace Utility {
     template <size_t I=0, size_t... Sizes>
     void fillBuffers(
         VkDevice const & device,
-        VkDeviceMemory* bufferMemory,
+        std::array<VkDeviceMemory,sizeof...(Sizes)> bufferMemory,
         std::tuple<std::array<float,Sizes>...> const & data
     )  {
         if constexpr(I==sizeof...(Sizes)) { return; }
@@ -103,20 +101,103 @@ namespace Utility {
         }
     }
     // Creates descriptor set layout
+    template<size_t NumBuffers>
     void createDescriptorSetLayout(
         VkDevice const& device, 
-        VkDescriptorSetLayout* descriptorSetLayout,
-        size_t const numBuffers
-    );
+        VkDescriptorSetLayout* descriptorSetLayout
+    )  {
+        std::array<VkDescriptorSetLayoutBinding,NumBuffers> binding;
+        for(size_t i = 0; i < NumBuffers; ++i){
+            binding[i].binding = i; // `layout(binding = 0)`
+            binding[i].descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
+            // Specifies the number buffers of a binding
+            //  `layout(binding=0) buffer Buffer { uint x[]; }` or
+            //   `layout(binding=0) buffer Buffer { uint x[]; } buffers[1]` would equal 1
+            //
+            //  `layout(binding=0) buffer Buffer { uint x[]; } buffers[3]` would equal 3,
+            //   in affect saying we have 3 buffers of the same format (`buffers[0].x` etc.).
+            binding[i].descriptorCount = 1;
+            binding[i].stageFlags = VK_SHADER_STAGE_COMPUTE_BIT;
+        }   
+        
+        // Descriptor set layout options
+        VkDescriptorSetLayoutCreateInfo descriptorSetLayoutCreateInfo = {
+            .sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO,
+            // `bindingCount` specifies length of `pBindings` array, in this case 1.
+            .bindingCount = static_cast<uint32_t>(NumBuffers),
+            // array of `VkDescriptorSetLayoutBinding`s
+            .pBindings = binding.data()
+        };
+        
+        // Create the descriptor set layout. 
+        VK_CHECK_RESULT(vkCreateDescriptorSetLayout(
+            device, &descriptorSetLayoutCreateInfo, nullptr, descriptorSetLayout
+        ));
+    }
     // Creates descriptor set
+    template<size_t NumBuffers>
     void createDescriptorSet(
         VkDevice const& device,
         VkDescriptorPool* descriptorPool,
         VkDescriptorSetLayout* descriptorSetLayout,
-        size_t const numBuffers,
-        VkBuffer*& buffer,
+        std::array<VkBuffer,NumBuffers>& buffer,
         VkDescriptorSet& descriptorSet
-    );
+    ) {
+        // Descriptor type and number
+        VkDescriptorPoolSize descriptorPoolSize = {
+            .type = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER,
+            .descriptorCount = static_cast<uint32_t>(NumBuffers) // Number of descriptors
+        };
+        // Creates descriptor pool
+        // A pool allocates a number of descriptors of each type
+        VkDescriptorPoolCreateInfo descriptorPoolCreateInfo = {
+            .sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO,
+            .maxSets = 1, // max number of sets that can be allocated from this pool
+            .poolSizeCount = 1, // length of `pPoolSizes`
+            .pPoolSizes = &descriptorPoolSize // pointer to array of `VkDescriptorPoolSize`
+        };
+        // create descriptor pool.
+        VK_CHECK_RESULT(vkCreateDescriptorPool(
+            device, &descriptorPoolCreateInfo, nullptr, descriptorPool
+        ));
+
+        // Specifies options for creation of multiple of descriptor sets
+        VkDescriptorSetAllocateInfo descriptorSetAllocateInfo = {
+            .sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO,
+            // pool from which sets will be allocated
+            .descriptorPool = *descriptorPool, 
+            // number of descriptor sets to implement (length of `pSetLayouts`)
+            .descriptorSetCount = 1, 
+            // pointer to array of descriptor set layouts
+            .pSetLayouts = descriptorSetLayout 
+        };
+        // allocate descriptor set.
+        VK_CHECK_RESULT(vkAllocateDescriptorSets(device, &descriptorSetAllocateInfo, &descriptorSet));
+
+        // Binds descriptors to buffers
+        std::array<VkDescriptorBufferInfo,NumBuffers> binding;
+        for(size_t i = 0; i < NumBuffers; ++i){
+            binding[i].buffer = buffer[i];
+            binding[i].offset = 0;
+            binding[i].range = VK_WHOLE_SIZE; // set to whole size of buffer
+        }
+
+        // Binds descriptors from descriptor sets to buffers
+        VkWriteDescriptorSet writeDescriptorSet = {
+            .sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,
+            // write to this descriptor set.
+            .dstSet = descriptorSet,
+            // update 1 descriptor respective set (we only have 1).
+            .descriptorCount = static_cast<uint32_t>(NumBuffers),
+            // buffer type.
+            .descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER,
+            // respective buffer.
+            .pBufferInfo = binding.data()
+        };
+        
+        // perform the update of the descriptor set.
+        vkUpdateDescriptorSets(device, 1, &writeDescriptorSet, 0, nullptr);
+    }
     // Reads shader file
     std::pair<size_t,uint32_t*> readShader(char const* filename);
 
@@ -256,7 +337,6 @@ namespace Utility {
 
         // Sets push constants
         if constexpr (PushConstantSize > 0) {
-            // std::byte* bytes = new std::byte[pushConstantSize];
             std::array<std::byte,PushConstantSize> bytes;
             size_t byteCounter = 0;
             std::for_each(pushConstants.cbegin(),pushConstants.cend(), [&](auto const& var) {
@@ -315,22 +395,22 @@ class ComputeApp {
     // Private members
     // -------------------------------------------------
     public:
-        VkInstance instance;                        // Vulkan instance.
-        VkPhysicalDevice physicalDevice;            // Physical device (e.g. GPU).
-        VkDevice device;                            // Logical device by which we connect to our physical device.
-        size_t queueFamilyIndex;                  // Index to a queue family.
-        VkQueue queue;                              // Queue.
-        size_t numHeldBuffers;                    // Number of buffers (necessary for destruction).
-        VkBuffer* buffer;                           // Buffers.
-        VkDeviceMemory* bufferMemory;               // Buffer memories.
-        VkDescriptorSetLayout descriptorSetLayout;  // Layout of a descriptor set.
-        VkDescriptorPool descriptorPool;            // Pool from which to pull descriptor sets.
-        VkDescriptorSet descriptorSet;              // Descriptor set.
-        VkShaderModule computeShaderModule;         // Shader.
-        VkPipelineLayout pipelineLayout;            // Layout for a pipeline.
-        VkPipeline pipeline;                        // Pipeline.
-        VkCommandPool commandPool;                  // Pool from which to pull command buffer.
-        VkCommandBuffer commandBuffer;              // Command buffer.
+        VkInstance instance;                                            // Vulkan instance.
+        VkPhysicalDevice physicalDevice;                                // Physical device (e.g. GPU).
+        VkDevice device;                                                // Logical device by which we connect to our physical device.
+        size_t queueFamilyIndex;                                        // Index to a queue family.
+        VkQueue queue;                                                  // Queue.
+        size_t numHeldBuffers;                                          // Number of buffers (necessary for destruction).
+        std::array<VkBuffer,sizeof...(BufferSizes)> buffer;             // Buffers.
+        std::array<VkDeviceMemory,sizeof...(BufferSizes)> bufferMemory; // Buffer memories.
+        VkDescriptorSetLayout descriptorSetLayout;                      // Layout of a descriptor set.
+        VkDescriptorPool descriptorPool;                                // Pool from which to pull descriptor sets.
+        VkDescriptorSet descriptorSet;                                  // Descriptor set.
+        VkShaderModule computeShaderModule;                             // Shader.
+        VkPipelineLayout pipelineLayout;                                // Layout for a pipeline.
+        VkPipeline pipeline;                                            // Pipeline.
+        VkCommandPool commandPool;                                      // Pool from which to pull command buffer.
+        VkCommandBuffer commandBuffer;                                  // Command buffer.
     // -------------------------------------------------
     // Public methods
     // -------------------------------------------------
@@ -366,10 +446,10 @@ class ComputeApp {
             Utility::fillBuffers(this->device,this->bufferMemory,buffers);
 
             // Creates descriptor set layout
-            Utility::createDescriptorSetLayout(this->device,&this->descriptorSetLayout,numBuffers);
+            Utility::createDescriptorSetLayout<numBuffers>(this->device,&this->descriptorSetLayout);
 
             // Creates descriptor set
-            Utility::createDescriptorSet(this->device,&this->descriptorPool,&this->descriptorSetLayout,numBuffers,this->buffer,this->descriptorSet);
+            Utility::createDescriptorSet(this->device,&this->descriptorPool,&this->descriptorSetLayout,this->buffer,this->descriptorSet);
 
             constexpr size_t const pcSize = Utility::pushConstantsSize(pushConstant);
 

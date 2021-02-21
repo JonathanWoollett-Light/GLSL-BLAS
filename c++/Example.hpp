@@ -106,15 +106,14 @@ namespace Utility {
     }
 
     // Creates compute pipeline
-    template <uint32_t NumPushConstants>
-    uint32_t createComputePipeline(
+    template <uint32_t PushConstantSize>
+    void createComputePipeline(
         VkDevice const& device,
         char const* shaderFile,
         VkShaderModule* computeShaderModule,
         VkDescriptorSetLayout* descriptorSetLayout,
         VkPipelineLayout* pipelineLayout,
-        VkPipeline* pipeline,
-        std::array<std::variant<uint32_t,float>,NumPushConstants> const& pushConstants
+        VkPipeline* pipeline
     ) {
         // Creates shader module (just a wrapper around our shader)
         // std::pair<uint32_t,uint32_t*> file = readShader(shaderFile); // (length,bytes)
@@ -144,22 +143,12 @@ namespace Utility {
             .setLayoutCount = 1, // 1 descriptor set
             .pSetLayouts = descriptorSetLayout // the 1 descriptor set 
         };
-
-        // Sets push constants
-        auto size_fn = [](auto const& var) -> size_t {
-                using T = std::decay_t<decltype(var)>;
-                return sizeof(T);
-            };
-        const uint32_t pushConstantSize = static_cast<uint32_t>(std::accumulate(pushConstants.begin(),pushConstants.end(),
-            std::size_t{ 0 },
-            [size_fn](std::size_t acc, auto var) { return acc + std::visit(size_fn,var); }
-        ));
-        if(pushConstantSize > 0) {
+        if constexpr (PushConstantSize > 0) {
             pipelineLayoutCreateInfo.pushConstantRangeCount = 1;
             pipelineLayoutCreateInfo.pPushConstantRanges = new VkPushConstantRange {
                 .stageFlags = VK_SHADER_STAGE_COMPUTE_BIT,
                 .offset = 0,
-                .size = pushConstantSize
+                .size = PushConstantSize
             };
         }
         
@@ -188,8 +177,6 @@ namespace Utility {
             1, &pipelineCreateInfo,
             nullptr, pipeline
         ));
-
-        return pushConstantSize;
     }
 
     // Creates command buffer
@@ -204,7 +191,6 @@ namespace Utility {
         VkDescriptorSet& descriptorSet,
         std::array<uint32_t,3> dims, // [x,y,z],
         std::array<uint32_t,3> dimLengths, // [local_size_x, local_size_y, local_size_z]
-        uint32_t const pushConstantSize,
         std::array<std::variant<uint32_t,float>,NumPushConstants> const& pushConstants
     ) {
         // Creates command pool
@@ -242,14 +228,14 @@ namespace Utility {
         vkCmdBindDescriptorSets(*commandBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, pipelineLayout, 0, 1, &descriptorSet, 0, nullptr);
 
         // Sets push constants
-        if(pushConstantSize > 0) {
-            std::byte* bytes = new std::byte[pushConstantSize];
-            // std::array<std::byte,pushConstantSize.value()> bytes;
+        if constexpr (PushConstantSize > 0) {
+            // std::byte* bytes = new std::byte[pushConstantSize];
+            std::array<std::byte,PushConstantSize> bytes;
             uint32_t byteCounter = 0;
-            std::for_each(pushConstants.begin(),pushConstants.end(), [&](auto const& var) {
+            std::for_each(pushConstants.cbegin(),pushConstants.cend(), [&](auto const& var) {
                 std::visit([&] (auto const& var) {
                     using T = std::decay_t<decltype(var)>;
-                    std::memcpy(bytes+byteCounter,static_cast<void const*>(&var),sizeof(T));
+                    std::memcpy(bytes.data()+byteCounter,static_cast<void const*>(&var),sizeof(T));
                     byteCounter += sizeof(T);
                 },var);
             });
@@ -259,8 +245,8 @@ namespace Utility {
                 pipelineLayout, 
                 VK_SHADER_STAGE_COMPUTE_BIT, 
                 0, 
-                pushConstantSize, 
-                static_cast<void*>(bytes)
+                PushConstantSize, 
+                static_cast<void*>(bytes.data())
             );
         }
 
@@ -292,7 +278,7 @@ namespace Utility {
     void* map(VkDevice& device, VkDeviceMemory& bufferMemory);
 }
 
-template <uint32_t NumPushConstants>
+template <uint32_t NumPushConstants, std::array<std::variant<uint32_t,float>, NumPushConstants> const& pushConstant>
 class ComputeApp {
     // -------------------------------------------------
     // Private members
@@ -323,7 +309,6 @@ class ComputeApp {
             uint32_t const numBuffers,
             uint32_t const* bufferSize,
             float** bufferData,
-            std::array<std::variant<uint32_t,float>, NumPushConstants> const pushConstant,
             std::array<uint32_t,3> dims, // [x,y,z],
             std::array<uint32_t,3> dimLengths // [local_size_x, local_size_y, local_size_z]
         )  {
@@ -352,22 +337,21 @@ class ComputeApp {
             // Creates descriptor set
             Utility::createDescriptorSet(this->device,&this->descriptorPool,&this->descriptorSetLayout,numBuffers,buffer,this->descriptorSet);
 
+            constexpr uint32_t const size = Utility::pushConstantsSize<NumPushConstants>(pushConstant);
+
             // Creates compute pipeline
-            uint32_t const pushConstantSize = 
-            Utility::createComputePipeline<NumPushConstants>(
+            Utility::createComputePipeline<size>(
                 this->device,
                 shaderFile,
                 &this->computeShaderModule,
                 &this->descriptorSetLayout,
                 &this->pipelineLayout,
-                &this->pipeline,
-                pushConstant
+                &this->pipeline
             );
 
-            constexpr uint32_t const sizeTester = Utility::pushConstantsSize<NumPushConstants>(pushConstant);
-            uint32_t const tester = 10U;
+            
             // Creates command buffer
-            Utility::createCommandBuffer<NumPushConstants,tester>(
+            Utility::createCommandBuffer<NumPushConstants,size>(
                 this->queueFamilyIndex,
                 this->device,
                 &this->commandPool,
@@ -377,7 +361,6 @@ class ComputeApp {
                 this->descriptorSet,
                 dims,
                 dimLengths,
-                pushConstantSize,
                 pushConstant
             );
 

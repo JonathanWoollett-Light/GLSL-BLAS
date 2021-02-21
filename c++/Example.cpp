@@ -120,7 +120,7 @@ uint32_t Utility::getComputeQueueFamilyIndex(VkPhysicalDevice const& physicalDev
     if (itr == queueFamilies.end()) {
         throw std::runtime_error("No compute queue family");
     }
-    return std::distance(queueFamilies.begin(), itr);
+    return static_cast<uint32_t>(std::distance(queueFamilies.begin(), itr));
 }
 
 // Creates logical device
@@ -271,7 +271,7 @@ void Utility::createDescriptorSetLayout(
     VkDescriptorSetLayout* descriptorSetLayout,
     uint32_t const numBuffers
 ) {
-    VkDescriptorSetLayoutBinding binding[numBuffers];
+    VkDescriptorSetLayoutBinding* binding = new VkDescriptorSetLayoutBinding[numBuffers];
     for(uint32_t i=0;i<numBuffers;++i){
         binding[i].binding = i; // `layout(binding = 0)`
         binding[i].descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
@@ -341,7 +341,7 @@ void Utility::createDescriptorSet(
     VK_CHECK_RESULT(vkAllocateDescriptorSets(device, &descriptorSetAllocateInfo, &descriptorSet));
 
     // Binds descriptors to buffers
-    VkDescriptorBufferInfo binding[numBuffers];
+    VkDescriptorBufferInfo* binding = new VkDescriptorBufferInfo[numBuffers];
     for(uint32_t i=0;i<numBuffers;++i){
         binding[i].buffer = buffer[i];
         binding[i].offset = 0;

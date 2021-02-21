@@ -16,7 +16,7 @@ const uint32_t MIN_SIZE = 100000;
 
 // TODO This seems extraordinarily large, am I doing something wrong?
 //  Also maybe use percentage difference instead.
-const float EPSILON = 0.1;
+const float EPSILON = 0.1F;
 
 // sscal
 // -----------------------------------------
@@ -879,7 +879,6 @@ TEST(SGEMV_F, two) {
         0,1,2,3,4,5,6,7,8,9
     };
     
-
     char const shader[] = "../../../glsl/sgemv_f.spv";
 
     ComputeApp<numPushConstants> app = ComputeApp<numPushConstants>(
@@ -907,9 +906,9 @@ TEST(SGEMV_F, random) {
     uint32_t const numPushConstants = 3;
 
     for(uint32_t i=0;i<RAND_RUNS;++i) {
-        uint32_t max = 10;//WORKGROUP_SIZE*WORKGROUP_SIZE;
-        uint32_t min = 5;//WORKGROUP_SIZE+1;
-        uint32_t size = min + (rand() % uint32_t(max - min + 1));
+        uint32_t const max = 10;//WORKGROUP_SIZE*WORKGROUP_SIZE;
+        uint32_t const min = 5;//WORKGROUP_SIZE+1;
+        uint32_t const size = min + (rand() % uint32_t(max - min + 1));
 
         float** data = new float*[numBuffers];
         data[0] = new float[size];
@@ -940,7 +939,7 @@ TEST(SGEMV_F, random) {
             std::array<uint32_t,3> { WORKGROUP_SIZE,1,1 } // Workgroup sizes
         );
 
-        float expected[size];
+        float* expected = new float[size];
         for(uint32_t j=0;j<size;++j) {
             float rSum = 0;
             const uint32_t row = size*j;

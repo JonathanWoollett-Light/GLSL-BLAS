@@ -93,16 +93,28 @@ namespace Utility {
     // Reads shader file
     std::pair<uint32_t,uint32_t*> readShader(char const* filename);
 
+    template <uint32_t NumPushConstants>
+    constexpr uint32_t pushConstantsSize(std::array<std::variant<uint32_t,float>,NumPushConstants> const& pushConstants) {
+        auto size_fn = [](auto const& var) -> size_t {
+            using T = std::decay_t<decltype(var)>;
+            return sizeof(T);
+        };
+        return static_cast<uint32_t>(std::accumulate(pushConstants.cbegin(),pushConstants.cend(),
+            std::size_t{ 0 },
+            [size_fn](std::size_t acc, auto const var) { return acc + std::visit(size_fn,var); }
+        ));
+    }
+
     // Creates compute pipeline
     template <uint32_t NumPushConstants>
-    std::optional<uint32_t> createComputePipeline(
+    uint32_t createComputePipeline(
         VkDevice const& device,
         char const* shaderFile,
         VkShaderModule* computeShaderModule,
         VkDescriptorSetLayout* descriptorSetLayout,
         VkPipelineLayout* pipelineLayout,
         VkPipeline* pipeline,
-        std::array<std::variant<uint32_t,float>,NumPushConstants>& pushConstants
+        std::array<std::variant<uint32_t,float>,NumPushConstants> const& pushConstants
     ) {
         // Creates shader module (just a wrapper around our shader)
         // std::pair<uint32_t,uint32_t*> file = readShader(shaderFile); // (length,bytes)
@@ -134,22 +146,20 @@ namespace Utility {
         };
 
         // Sets push constants
-        std::optional<uint32_t> pushConstantSize = std::nullopt;
-        if(pushConstants.size() != 0) {
-            auto size_fn = [](auto const& var) -> size_t {
+        auto size_fn = [](auto const& var) -> size_t {
                 using T = std::decay_t<decltype(var)>;
                 return sizeof(T);
             };
-            pushConstantSize = static_cast<uint32_t>(std::accumulate(pushConstants.begin(),pushConstants.end(),
-                std::size_t{ 0 },
-                [size_fn](std::size_t acc, auto var) { return acc + std::visit(size_fn,var); }
-            ));
-
+        const uint32_t pushConstantSize = static_cast<uint32_t>(std::accumulate(pushConstants.begin(),pushConstants.end(),
+            std::size_t{ 0 },
+            [size_fn](std::size_t acc, auto var) { return acc + std::visit(size_fn,var); }
+        ));
+        if(pushConstantSize > 0) {
             pipelineLayoutCreateInfo.pushConstantRangeCount = 1;
             pipelineLayoutCreateInfo.pPushConstantRanges = new VkPushConstantRange {
                 .stageFlags = VK_SHADER_STAGE_COMPUTE_BIT,
                 .offset = 0,
-                .size = pushConstantSize.value()
+                .size = pushConstantSize
             };
         }
         
@@ -183,7 +193,7 @@ namespace Utility {
     }
 
     // Creates command buffer
-    template <uint32_t NumPushConstants>
+    template <uint32_t NumPushConstants, uint32_t PushConstantSize>
     void createCommandBuffer(
         uint32_t queueFamilyIndex,
         VkDevice& device,
@@ -194,8 +204,8 @@ namespace Utility {
         VkDescriptorSet& descriptorSet,
         std::array<uint32_t,3> dims, // [x,y,z],
         std::array<uint32_t,3> dimLengths, // [local_size_x, local_size_y, local_size_z]
-        std::optional<uint32_t> const pushConstantSize,
-        std::array<std::variant<uint32_t,float>,NumPushConstants>& pushConstants
+        uint32_t const pushConstantSize,
+        std::array<std::variant<uint32_t,float>,NumPushConstants> const& pushConstants
     ) {
         // Creates command pool
         VkCommandPoolCreateInfo commandPoolCreateInfo = {
@@ -232,8 +242,9 @@ namespace Utility {
         vkCmdBindDescriptorSets(*commandBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, pipelineLayout, 0, 1, &descriptorSet, 0, nullptr);
 
         // Sets push constants
-        if(pushConstantSize.has_value()) {
-            std::byte* bytes = new std::byte[pushConstantSize.value()];
+        if(pushConstantSize > 0) {
+            std::byte* bytes = new std::byte[pushConstantSize];
+            // std::array<std::byte,pushConstantSize.value()> bytes;
             uint32_t byteCounter = 0;
             std::for_each(pushConstants.begin(),pushConstants.end(), [&](auto const& var) {
                 std::visit([&] (auto const& var) {
@@ -248,7 +259,7 @@ namespace Utility {
                 pipelineLayout, 
                 VK_SHADER_STAGE_COMPUTE_BIT, 
                 0, 
-                pushConstantSize.value(), 
+                pushConstantSize, 
                 static_cast<void*>(bytes)
             );
         }
@@ -312,7 +323,7 @@ class ComputeApp {
             uint32_t const numBuffers,
             uint32_t const* bufferSize,
             float** bufferData,
-            std::array<std::variant<uint32_t,float>, NumPushConstants> pushConstant,
+            std::array<std::variant<uint32_t,float>, NumPushConstants> const pushConstant,
             std::array<uint32_t,3> dims, // [x,y,z],
             std::array<uint32_t,3> dimLengths // [local_size_x, local_size_y, local_size_z]
         )  {
@@ -342,7 +353,7 @@ class ComputeApp {
             Utility::createDescriptorSet(this->device,&this->descriptorPool,&this->descriptorSetLayout,numBuffers,buffer,this->descriptorSet);
 
             // Creates compute pipeline
-            std::optional<uint32_t> const pushConstantSize = 
+            uint32_t const pushConstantSize = 
             Utility::createComputePipeline<NumPushConstants>(
                 this->device,
                 shaderFile,
@@ -353,8 +364,10 @@ class ComputeApp {
                 pushConstant
             );
 
+            //constexpr uint32_t const sizeTester = Utility::pushConstantsSize<NumPushConstants>(pushConstant); // `Utility::pushConstantsSize` is constexpr
+            uint32_t const tester = 10U;
             // Creates command buffer
-            Utility::createCommandBuffer<NumPushConstants>(
+            Utility::createCommandBuffer<NumPushConstants,tester>(
                 this->queueFamilyIndex,
                 this->device,
                 &this->commandPool,

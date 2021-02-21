@@ -8,7 +8,7 @@ set(This Example2)
 project(${This} CXX)
 
 # Sets C++ version
-set(CMAKE_CXX_STANDARD 17)
+set(CMAKE_CXX_STANDARD 20)
 
 find_package(Vulkan) # Finds Vulkan
 include_directories(${Vulkan_INCLUDE_DIR}) # Adds Vulkan

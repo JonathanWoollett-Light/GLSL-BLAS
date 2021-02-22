@@ -11,8 +11,8 @@ const size_t RAND_RUNS = 1;
 
 const size_t WORKGROUP_SIZE = 1024;
 
-const size_t MAX_SIZE = 1000000;
-const size_t MIN_SIZE = 100000;
+constexpr size_t const MAX_SIZE = 100000;
+constexpr size_t const MIN_SIZE = 10000;
 
 // TODO This seems extremely large, am I doing something wrong?
 //  Also maybe use percentage difference instead.
@@ -72,47 +72,37 @@ TEST(SSCAL, two) {
         ASSERT_EQ(2*i,out[i]);
     }
 }
-/*
+
 TEST(SSCAL, random) {
     srand((unsigned int)time(NULL));
 
-    size_t const numBuffers = 1;
     size_t const numPushConstants = 1;
-    // static std::array<std::variant<size_t,float>,numPushConstants> pushConstants;
 
-    for(size_t i=0;i<RAND_RUNS;++i) {
+    constexpr size_t const size = MIN_SIZE + linearCongruentialGenerator(1) % (MAX_SIZE - MIN_SIZE + 1);
 
-        size_t const size = MIN_SIZE + (rand() % size_t(MAX_SIZE - MIN_SIZE + 1));
+    std::array<float,size> x;
+    for(size_t i = 0; i < size; ++i) {
+        x[i] = float(rand())/float(RAND_MAX);
+    }
+    auto data = std::make_tuple(x);
 
-        float** data = new float*[numBuffers];
-        data[0] = new float[size];
-        for(size_t j=0;j<size;++j) {
-            data[0][j] = float(rand())/float(RAND_MAX);
-        }
+    constexpr float const alpha = randToFloat(linearCongruentialGenerator(2));
+    static std::array<std::variant<size_t,float>,numPushConstants> const pushConstants = { alpha };
 
-        float const alpha = float(rand())/float(RAND_MAX);
-        // pushConstants[0] = alpha;
-        // static constexpr std::array<std::variant<size_t,float>,numPushConstants> const pushConstants = { float(rand())/float(RAND_MAX) };
+    char const shader[] = "../../../glsl/sscal.spv";
 
-        char const shader[] = "../../../glsl/sscal.spv";
+    ComputeApp app = ComputeApp<numPushConstants,pushConstants,size>(
+        shader,
+        data, // Buffer data
+        std::array<size_t,3> { size,1,1 }, // Invocations
+        std::array<size_t,3> { WORKGROUP_SIZE,1,1 } // Workgroup sizes
+    );
 
-        ComputeApp<numPushConstants,pushConstants> app = ComputeApp<numPushConstants,pushConstants>(
-            shader,
-            numBuffers, //  Number of buffers
-            new size_t[numBuffers]{ size }, // Buffer sizes
-            data, // Buffer data
-            std::array<size_t,3> { size,1,1 }, // Invocations
-            std::array<size_t,3> { WORKGROUP_SIZE,1,1 } // Workgroup sizes
-        );
-
-        float* out = static_cast<float*>(Utility::map(app.device,app.bufferMemory[0]));
-        for(size_t j = 0; j < size; ++j) {
-            //std::cout << out[i] << std::endl;
-            ASSERT_EQ(alpha*data[0][j],out[j]);
-        }
+    float* out = static_cast<float*>(Utility::map(app.device,app.bufferMemory[0]));
+    for(size_t i = 0; i < size; ++i) {
+        ASSERT_EQ(alpha*x[i],out[i]);
     }
 }
-*/
 
 // saxpy
 // -----------------------------------------
@@ -150,7 +140,7 @@ TEST(SAXPY, two) {
     size_t const size = 10;
 
     auto data = std::make_tuple(
-        std::array<float,size>{0,1,2,3,4,5,6,7,8,9},
+        std::array<float,size>{ 0,1,2,3,4,5,6,7,8,9 },
         std::array<float,size>{ 9,8,7,6,5,4,3,2,1,0 }
     );
 
@@ -171,48 +161,37 @@ TEST(SAXPY, two) {
     }
 }
 
-/*
-TEST(SAXPY, random) {
-    srand((unsigned int)time(NULL));
+// TEST(SAXPY, random) {
+//     srand((unsigned int)time(NULL));
 
-    size_t const numBuffers = 2;
-    size_t const numPushConstants = 1;
-    static std::array<std::variant<size_t,float>,numPushConstants> pushConstants;
+//     constexpr size_t const numPushConstants = 1;
+//     constexpr size_t const size = MIN_SIZE + (linearCongruentialGenerator(3) % (MAX_SIZE - MIN_SIZE + 1));
 
-    for(size_t i=0;i<RAND_RUNS;++i) {
+//     std::array<float,size> x;
+//     std::array<float,size> y;
+//     for(size_t i = 0; i < size; ++i) {
+//         x[i] = float(rand())/float(RAND_MAX);
+//         y[i] = float(rand())/float(RAND_MAX);
+//     }
+//     auto data = std::make_tuple(x,y);
 
-        size_t const size = MIN_SIZE + (rand() % size_t(MAX_SIZE - MIN_SIZE + 1));
+//     constexpr float const alpha = randToFloat(linearCongruentialGenerator(4));
+//     static std::array<std::variant<size_t,float>,numPushConstants> pushConstants { alpha };
 
-        float** data = new float*[numBuffers];
-        data[0] = new float[size];
-        data[1] = new float[size];
+//     char const shader[] = "../../../glsl/saxpy.spv";
 
-        for(size_t j=0;j<size;++j) {
-            data[0][j] = float(rand())/float(RAND_MAX);
-            data[1][j] = float(rand())/float(RAND_MAX);
-        }
+//     ComputeApp app = ComputeApp<numPushConstants,pushConstants,size,size>(
+//         shader,
+//         data, // Buffer data
+//         std::array<size_t,3> { size,1,1 }, // Invocations
+//         std::array<size_t,3> { WORKGROUP_SIZE,1,1 } // Workgroup sizes
+//     );
 
-        float const alpha = float(rand())/float(RAND_MAX);
-        pushConstants[0] = alpha;
-
-        char const shader[] = "../../../glsl/saxpy.spv";
-        ComputeApp<numPushConstants,pushConstants> app = ComputeApp<numPushConstants,pushConstants>(
-            shader,
-            2, //  Number of buffers
-            new size_t[numBuffers]{ size, size }, // Buffer sizes
-            data, // Buffer data
-            std::array<size_t,3> { size,1,1 }, // Invocations
-            std::array<size_t,3> { WORKGROUP_SIZE,1,1 } // Workgroup sizes
-        );
-
-        float* out = static_cast<float*>(Utility::map(app.device,app.bufferMemory[1]));
-        for(size_t j = 0; j < size; ++j) {
-            //std::cout << out[i] << std::endl;
-            ASSERT_EQ(alpha*data[0][j]+data[1][j],out[j]);
-        }
-    }
-}
-*/
+//     float* out = static_cast<float*>(Utility::map(app.device,app.bufferMemory[1]));
+//     for(size_t i = 0; i < size; ++i) {
+//         ASSERT_EQ(alpha*std::get<0>(data)[i]+std::get<1>(data)[i],out[i]);
+//     }
+// }
 
 // sdot_f
 // -----------------------------------------

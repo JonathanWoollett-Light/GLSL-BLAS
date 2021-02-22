@@ -501,3 +501,29 @@ class ComputeApp {
             vkDestroyInstance(instance, nullptr);		
         }
 };
+
+constexpr float randToFloat(uint64_t const x) {
+    return static_cast<float>(x%4294967296)/4294967296.0F;
+}
+
+template<
+    uint64_t m = 4294967296, // 2^32
+    uint64_t a = 1664525,
+    uint64_t c = 1013904223
+>
+constexpr uint64_t linearCongruentialGenerator(
+    size_t const n,
+    uint64_t const s =
+        100000*(*__TIME__-'0')+
+        10000*(*(__TIME__+1)-'0')+
+        1000*(*(__TIME__+3)-'0')+
+        100*(*(__TIME__+4)-'0')+
+        10*(*(__TIME__+6)-'0')+
+        (*(__TIME__+7)-'0')
+){
+    uint64_t x = s;
+    for(size_t i=0;i<n;++i){
+        x = (a * x + c) % m;
+    }
+    return x;
+}

@@ -15,9 +15,9 @@
 #include <tuple>
 
 #ifdef NDEBUG
-const auto enableValidationLayers = std::nullopt;
+const std::optional<char const*> enableValidationLayers = std::nullopt;
 #else
-const auto enableValidationLayers = std::optional<char const*>{"VK_LAYER_KHRONOS_validation"};
+const std::optional<char const*> enableValidationLayers = std::optional<char const*>{"VK_LAYER_KHRONOS_validation"};
 #endif
 
 // Macro to check Vulkan result

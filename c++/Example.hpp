@@ -13,6 +13,7 @@
 
 #include <iostream>
 #include <tuple>
+#include <limits>
 
 #ifdef NDEBUG
 const std::optional<char const*> enableValidationLayers = std::nullopt;
@@ -78,7 +79,7 @@ namespace Utility {
     void fillBuffer(
         VkDevice const & device,
         VkDeviceMemory& bufferMemory,
-        std::array<float,Size> const & bufferData
+        std::array<float,Size> & bufferData
     )  {
         void* data = nullptr;
         // Maps buffer memory into RAM
@@ -92,7 +93,7 @@ namespace Utility {
     void fillBuffers(
         VkDevice const & device,
         std::array<VkDeviceMemory,sizeof...(Sizes)> bufferMemory,
-        std::tuple<std::array<float,Sizes>...> const & data
+        std::tuple<std::array<float,Sizes>...> & data
     )  {
         if constexpr(I==sizeof...(Sizes)) { return; }
         else {
@@ -202,7 +203,7 @@ namespace Utility {
     std::pair<size_t,uint32_t*> readShader(char const* filename);
 
     template <size_t NumPushConstants>
-    constexpr size_t pushConstantsSize(std::array<std::variant<size_t,float>,NumPushConstants> const& pushConstants) {
+    constexpr size_t pushConstantsSize(std::array<std::variant<uint32_t,float>,NumPushConstants> const& pushConstants) {
         auto size_fn = [](auto const& var) -> size_t {
             using T = std::decay_t<decltype(var)>;
             return sizeof(T);
@@ -299,7 +300,7 @@ namespace Utility {
         VkDescriptorSet& descriptorSet,
         std::array<size_t,3> dims, // [x,y,z],
         std::array<size_t,3> dimLengths, // [local_size_x, local_size_y, local_size_z]
-        std::array<std::variant<size_t,float>,NumPushConstants> const& pushConstants
+        std::array<std::variant<uint32_t,float>,NumPushConstants> const& pushConstants
     ) {
         // Creates command pool
         VkCommandPoolCreateInfo commandPoolCreateInfo = {
@@ -387,7 +388,7 @@ namespace Utility {
 
 template <
     size_t NumPushConstants,
-    std::array<std::variant<size_t,float>, NumPushConstants> const& pushConstant,
+    std::array<std::variant<uint32_t,float>, NumPushConstants> const& pushConstant,
     size_t... BufferSizes
 >
 class ComputeApp {
@@ -417,7 +418,7 @@ class ComputeApp {
     public:
         ComputeApp(
             char const* shaderFile,
-            std::tuple<std::array<float,BufferSizes>...> buffers,
+            std::tuple<std::array<float,BufferSizes>...> & buffers,
             std::array<size_t,3> dims, // [x,y,z],
             std::array<size_t,3> dimLengths // [local_size_x, local_size_y, local_size_z]
         )  {
@@ -503,7 +504,7 @@ class ComputeApp {
 };
 
 constexpr float randToFloat(uint64_t const x) {
-    return static_cast<float>(x%4294967296)/4294967296.0F;
+    return static_cast<float>(x) / static_cast<float>(std::numeric_limits<uint64_t>::max());
 }
 
 template<

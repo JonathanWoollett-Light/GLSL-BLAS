@@ -1,6 +1,6 @@
-# 🚧 EXTRME WIP 🚧
+# 🚧 WIP 🚧
 
-Everything but the GLSL files is a mess (and even the GLSL files are still rough).
+GLSL implemented with Vulkan for BLAS operations.
 
 ## Report
 

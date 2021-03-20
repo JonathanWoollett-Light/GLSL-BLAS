@@ -25,7 +25,6 @@ TEST(SSCAL, one) {
     size_t const numPushConstants = 1;
     size_t const size = 10;
 
-
     auto data = std::make_tuple(
         std::array<float,size>{0,1,2,3,4,5,6,7,8,9}
     );

@@ -1,6 +1,8 @@
 # CMake version
 cmake_minimum_required (VERSION 3.8)
 
+set(CMAKE_CXX_COMPILER "/usr/bin/g++-10")
+
 # Project name variable
 set(This Example2)
 
@@ -9,6 +11,7 @@ project(${This} CXX)
 
 # Sets C++ version
 set(CMAKE_CXX_STANDARD 20)
+# set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 find_package(Vulkan) # Finds Vulkan
 include_directories(${Vulkan_INCLUDE_DIR}) # Adds Vulkan

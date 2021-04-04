@@ -18,7 +18,7 @@ layout(binding = 2) buffer Buffer2 {
 layout(push_constant) uniform PushConsts {
     float alpha;
     float beta;
-    uint size; // =m=n
+    uint size; // = m = n
 };
 
 // This should only be called with 1 workgroup

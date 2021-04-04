@@ -1,0 +1,55 @@
+#version 450
+#extension GL_KHR_shader_subgroup_arithmetic : enable
+
+// alpha*A*x + beta*y
+
+layout(local_size_x = 1024, local_size_y = 1, local_size_z = 1) in;
+
+layout(binding = 0) buffer Buffer0 {
+    float A[];
+};
+layout(binding = 1) buffer Buffer1 {
+    float B[];
+};
+layout(binding = 2) buffer Buffer2 {
+    float C[];
+};
+
+layout(push_constant) uniform PushConsts {
+    float alpha;
+    float beta;
+    // A: m*k, B: k*n, C: m*n
+    uint m; // rows of A, rows of C
+    uint k; // cols of A, rows of B
+    uint n; // cols of B, cols of C
+};
+
+// This should only be called with 1 workgroup
+// gl_LocalInvocationID.x === gl_GlobalInvocationID.x
+void main() {
+    const uint indx = gl_LocalInvocationID.x;
+    const uint rows = uint(ceil(m / float(gl_WorkGroupSize.x)));
+
+    const uint start = indx * rows;
+    const uint stop = start + rows;
+
+    // Iterate across rows of A
+    for(uint m_index = start; m_index < stop; ++m_index) {
+
+        const uint A_row = k * m_index;
+
+        // Iterate across columns of B
+        for(uint n_index = 0; n_index < n; ++n_index) {
+
+            // dot product of a row vector from A and a col vector from B (dot = hadamard into sum)
+            float temp = 0;
+
+            for(uint k_index = 0; k_index < k; ++k_index) {
+                temp += A[A_row + k_index] * B[n * k_index + n_index];
+            }
+
+            const uint C_index = n * m_index + n_index;
+            C[C_index] = alpha*temp + beta*C[C_index];
+        }
+    }
+}

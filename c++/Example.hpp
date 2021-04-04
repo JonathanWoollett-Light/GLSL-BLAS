@@ -521,9 +521,9 @@ constexpr uint64_t linearCongruentialGenerator(
         100*(*(__TIME__+4)-'0')+
         10*(*(__TIME__+6)-'0')+
         (*(__TIME__+7)-'0')
-){
+) {
     uint64_t x = s;
-    for(size_t i=0;i<n;++i){
+    for(size_t i = 0; i < n; ++i) {
         x = (a * x + c) % m;
     }
     return x;

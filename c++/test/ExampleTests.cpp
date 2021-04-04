@@ -14,6 +14,9 @@ const size_t WORKGROUP_SIZE = 1024;
 constexpr size_t const MAX_SIZE = 100000;
 constexpr size_t const MIN_SIZE = 10000;
 
+constexpr size_t const LOWER_MAX_SIZE = 100;
+constexpr size_t const LOWER_MIN_SIZE = 10;
+
 // TODO This seems extremely large, am I doing something wrong?
 //  Also maybe use percentage difference instead.
 const float EPSILON = 0.1F;
@@ -886,60 +889,199 @@ TEST(SGEMV_F, two) {
     }
 }
 
-// TEST(SGEMV_F, random) {
-//     srand((unsigned int)time(NULL));
+TEST(SGEMV_F, random) {
+    srand((unsigned int)time(NULL));
 
-//     size_t const numPushConstants = 3;
-//     constexpr size_t const size = MIN_SIZE + (linearCongruentialGenerator(9) % (MAX_SIZE - MIN_SIZE + 1));
+    size_t const numPushConstants = 3;
+    constexpr size_t const size = LOWER_MIN_SIZE + (linearCongruentialGenerator(9) % (LOWER_MAX_SIZE - LOWER_MIN_SIZE + 1));
 
-//     std::array<float,size> x;
-//     std::array<float,size> y;
-//     std::array<float,size*size> A;
-//     for(size_t i = 0; i < size; ++i) {
-//         x[i] = float(rand())/float(RAND_MAX);
-//         y[i] = float(rand())/float(RAND_MAX);
-//         const size_t row = size*i;
-//         for(size_t j = 0; j < size; ++j) {
-//             A[row+j] = float(rand())/float(RAND_MAX);
-//         }
-//     }
+    std::array<float,size> x;
+    std::array<float,size> y;
+    std::array<float,size*size> A;
+    for(size_t i = 0; i < size; ++i) {
+        x[i] = float(rand())/float(RAND_MAX);
+        y[i] = float(rand())/float(RAND_MAX);
+        const size_t row = size*i;
+        for(size_t j = 0; j < size; ++j) {
+            A[row+j] = float(rand())/float(RAND_MAX);
+        }
+    }
 
-//     auto data = std::make_tuple(
-//         std::move(x),
-//         std::move(y),
-//         std::move(A)
-//     );
+    auto data = std::make_tuple(
+        std::move(x),
+        std::move(y),
+        std::move(A)
+    );
 
-//     constexpr float const alpha = randToFloat(linearCongruentialGenerator(10));
-//     constexpr float const beta = randToFloat(linearCongruentialGenerator(11));
-//     static std::array<std::variant<uint32_t,float>,numPushConstants> const pushConstants = {
-//         alpha,beta,static_cast<uint32_t>(size)
-//     };
+    constexpr float const alpha = randToFloat(linearCongruentialGenerator(10));
+    constexpr float const beta = randToFloat(linearCongruentialGenerator(11));
+    static std::array<std::variant<uint32_t,float>,numPushConstants> const pushConstants = {
+        alpha,beta,static_cast<uint32_t>(size)
+    };
 
-//     char const shader[] = "../../../glsl/sgemv_f.spv";
+    char const shader[] = "../../../glsl/sgemv_f.spv";
 
-//     ComputeApp app = ComputeApp<numPushConstants,pushConstants,size,size,size*size>(
-//         shader,
-//         data, // Buffer data
-//         std::array<size_t,3> { 1,1,1 }, // Invocations
-//         std::array<size_t,3> { WORKGROUP_SIZE,1,1 } // Workgroup sizes
-//     );
+    ComputeApp app = ComputeApp<numPushConstants,pushConstants,size,size,size*size>(
+        shader,
+        data, // Buffer data
+        std::array<size_t,3> { 1,1,1 }, // Invocations
+        std::array<size_t,3> { WORKGROUP_SIZE,1,1 } // Workgroup sizes
+    );
 
-//     std::array<float,size> expected;
-//     for(size_t i = 0; i < size; ++i) {
-//         float rSum = 0;
-//         const size_t row = size*i;
-//         for(size_t j = 0; j < size; ++j) {
-//             rSum += std::get<2>(data)[row+j] * std::get<0>(data)[j];
-//         }
-//         rSum *= alpha;
-//         rSum += beta * std::get<1>(data)[i];
-//         expected[i] = rSum;
-//     }
+    std::array<float,size> expected;
+    for(size_t i = 0; i < size; ++i) {
+        float rSum = 0;
+        const size_t row = size*i;
+        for(size_t j = 0; j < size; ++j) {
+            rSum += std::get<2>(data)[row+j] * std::get<0>(data)[j];
+        }
+        rSum *= alpha;
+        rSum += beta * std::get<1>(data)[i];
+        expected[i] = rSum;
+    }
 
-//     float* out = static_cast<float*>(Utility::map(app.device,app.bufferMemory[1]));
-//     for(size_t j = 0; j < size; ++j) {
-//         // std::cout << out[j] << std::endl;
-//         ASSERT_NEAR(expected[j],out[j],EPSILON);
-//     }
-// }
+    float* out = static_cast<float*>(Utility::map(app.device,app.bufferMemory[1]));
+    for(size_t j = 0; j < size; ++j) {
+        // std::cout << out[j] << std::endl;
+        ASSERT_NEAR(expected[j],out[j],2*EPSILON);
+    }
+}
+
+// sgemm
+// -----------------------------------------
+
+// 1 subgroup worth (3,5,2)
+TEST(SGEMM_F, one) {
+    size_t const numBuffers = 3;
+    size_t const numPushConstants = 5;
+    size_t const m = 3;
+    size_t const k = 5;
+    size_t const n = 2;
+
+    size_t const a_size = m * k;
+    size_t const b_size = k * n;
+    size_t const c_size = m * n;
+
+    auto data = std::make_tuple(
+        std::array<float,a_size> { 
+            1,2,1,1,1,
+            0,1,0,1,1,
+            2,3,4,1,1 
+        },
+        std::array<float,b_size> { 
+            2,5,
+            6,7,
+            1,8,
+            1,1,
+            1,1
+        },
+        std::array<float,c_size> {
+            2,8,
+            7,5,
+            9,3
+        }
+    );
+
+    static std::array<std::variant<uint32_t,float>,numPushConstants> const pushConstants = { 
+        2.0F,
+        3.0F,
+        static_cast<uint32_t>(m),
+        static_cast<uint32_t>(k),
+        static_cast<uint32_t>(n)
+    };
+    
+    char const shader[] = "../../../glsl/sgemm_f.spv";
+
+    ComputeApp app = ComputeApp<numPushConstants,pushConstants,a_size,b_size,c_size>(
+        shader,
+        data, // Buffer data
+        std::array<size_t,3> { 1,1,1 }, // Invocations
+        std::array<size_t,3> { WORKGROUP_SIZE,1,1 } // Workgroup sizes
+    );
+
+    std::array<float,c_size> const expected = { 
+        40,82,
+        37,33,
+        83,139
+    };
+    float* out = static_cast<float*>(Utility::map(app.device,app.bufferMemory[2]));
+    for(size_t i = 0; i < c_size; ++i) {
+        ASSERT_NEAR(expected[i],out[i],EPSILON);
+    }
+}
+
+TEST(SGEMM_F, random) {
+    srand((unsigned int)time(NULL));
+
+    size_t const numPushConstants = 5;
+
+    constexpr size_t const m = LOWER_MIN_SIZE + (linearCongruentialGenerator(12) % (LOWER_MAX_SIZE - LOWER_MIN_SIZE + 1));
+    constexpr size_t const k = LOWER_MIN_SIZE + (linearCongruentialGenerator(13) % (LOWER_MAX_SIZE - LOWER_MIN_SIZE + 1));
+    constexpr size_t const n = LOWER_MIN_SIZE + (linearCongruentialGenerator(14) % (LOWER_MAX_SIZE - LOWER_MIN_SIZE + 1));
+
+    size_t const a_size = m * k;
+    size_t const b_size = k * n;
+    size_t const c_size = m * n;
+
+    std::array<float,a_size> A;
+    std::array<float,b_size> B;
+    std::array<float,c_size> C;
+    std::array<float,c_size> C_cpu; // cpu side verison of C which retains the original values
+    for(size_t i = 0; i < a_size; ++i) {
+        A[i] = float(rand())/float(RAND_MAX);
+    }
+    for(size_t i = 0; i < b_size; ++i) {
+        B[i] = float(rand())/float(RAND_MAX);
+    }
+    for(size_t i = 0; i < c_size; ++i) {
+        C[i] = float(rand())/float(RAND_MAX);
+        C_cpu[i] = C[i];
+    }
+
+    auto data = std::make_tuple(
+        std::move(A),
+        std::move(B),
+        std::move(C)
+    );
+
+    constexpr float const alpha = randToFloat(linearCongruentialGenerator(15));
+    constexpr float const beta = randToFloat(linearCongruentialGenerator(16));
+    static std::array<std::variant<uint32_t,float>,numPushConstants> const pushConstants = {
+        alpha,
+        beta,
+        static_cast<uint32_t>(m),
+        static_cast<uint32_t>(k),
+        static_cast<uint32_t>(n)
+    };
+
+    char const shader[] = "../../../glsl/sgemm_f.spv";
+
+    ComputeApp app = ComputeApp<numPushConstants,pushConstants,a_size,b_size,c_size>(
+        shader,
+        data, // Buffer data
+        std::array<size_t,3> { 1,1,1 }, // Invocations
+        std::array<size_t,3> { WORKGROUP_SIZE,1,1 } // Workgroup sizes
+    );
+
+    std::array<float,c_size> expected;
+    for(size_t m_index = 0; m_index < m; ++m_index) {
+        const size_t A_row = k * m_index;
+        for(size_t n_index = 0; n_index < n; ++n_index) {
+            float temp = 0;
+            for(size_t k_index = 0; k_index < k; ++k_index) {
+                temp += std::get<0>(data)[A_row + k_index] * std::get<1>(data)[n * k_index + n_index];
+                // std::cout << std::get<0>(data)[A_row + k_index] << '*' << std::get<1>(data)[n * k_index + n_index] << ' ';
+            }
+            // std::cout << temp << ' ';
+            const size_t C_index = n * m_index + n_index;
+            expected[C_index] = alpha * temp + beta * C_cpu[C_index];
+            // std::cout << alpha << '*' << temp << '+' << beta << '*' << C_cpu[C_index] << '=' << expected[C_index] << std::endl;
+        }
+    }
+    //assert(false);
+
+    float* out = static_cast<float*>(Utility::map(app.device,app.bufferMemory[2]));
+    for(size_t i = 0; i < c_size; ++i) {
+        ASSERT_NEAR(expected[i],out[i],2*EPSILON);
+    }
+}

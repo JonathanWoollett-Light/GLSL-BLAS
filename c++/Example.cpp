@@ -288,11 +288,18 @@ void Utility::runCommandBuffer(
         // pointer to array of command buffers to submit
         .pCommandBuffers = commandBuffer
     };
+
+    auto start = std::chrono::high_resolution_clock::now();
+
     // Submit command buffer with fence
     VK_CHECK_RESULT(vkQueueSubmit(queue, 1, &submitInfo, fence));
 
     // Wait for fence to signal (which it does when command buffer has finished)
     VK_CHECK_RESULT(vkWaitForFences(device, 1, &fence, VK_TRUE, 100000000000));
+
+    auto stop = std::chrono::high_resolution_clock::now();
+    auto duration = std::chrono::duration_cast<std::chrono::nanoseconds>(stop - start);
+    std::cout << "Duration (inside):" << duration.count() << std::endl;
 
     // Destructs fence
     vkDestroyFence(device, fence, nullptr);

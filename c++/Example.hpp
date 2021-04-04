@@ -15,6 +15,8 @@
 #include <tuple>
 #include <limits>
 
+#include <chrono>
+
 #ifdef NDEBUG
 const std::optional<char const*> enableValidationLayers = std::nullopt;
 #else

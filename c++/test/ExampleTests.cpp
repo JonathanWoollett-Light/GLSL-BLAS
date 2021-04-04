@@ -21,6 +21,46 @@ constexpr size_t const LOWER_MIN_SIZE = 10;
 //  Also maybe use percentage difference instead.
 const float EPSILON = 0.1F;
 
+
+TEST(SAXPY, random) {
+    srand((unsigned int)time(NULL));
+
+    size_t const numPushConstants = 1;
+    constexpr size_t const size = 6400;
+
+    std::array<float,size> x;
+    std::array<float,size> y;
+    for(size_t i = 0; i < size; ++i) {
+        x[i] = float(rand())/float(RAND_MAX);
+        y[i] = float(rand())/float(RAND_MAX);
+    }
+    auto data = std::make_tuple(
+        std::move(x),
+        std::move(y)
+    );
+
+    constexpr float const alpha = randToFloat(linearCongruentialGenerator(4));
+    static std::array<std::variant<uint32_t,float>,numPushConstants> const pushConstants { alpha };
+
+    char const shader[] = "../../../glsl/saxpy.spv";
+
+    ComputeApp app = ComputeApp<numPushConstants,pushConstants,size,size>(
+        shader,
+        data, // Buffer data
+        std::array<size_t,3> { size,1,1 }, // Invocations
+        std::array<size_t,3> { WORKGROUP_SIZE,1,1 } // Workgroup sizes
+    );
+
+    float* out = static_cast<float*>(Utility::map(app.device,app.bufferMemory[1]));
+    for(size_t i = 0; i < size; ++i) {
+        ASSERT_EQ(alpha*std::get<0>(data)[i]+std::get<1>(data)[i],out[i]);
+    }
+}
+
+/*
+
+
+
 // sscal
 // -----------------------------------------
 
@@ -1085,3 +1125,9 @@ TEST(SGEMM_F, random) {
         ASSERT_NEAR(expected[i],out[i],2*EPSILON);
     }
 }
+
+
+
+
+
+*/

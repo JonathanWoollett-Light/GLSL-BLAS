@@ -1,4 +1,4 @@
-# 🚧 WIP 🚧
+# GLSL BLAS
 
 GLSL implemented with Vulkan for BLAS operations.
 
@@ -10,7 +10,7 @@ GLSL implemented with Vulkan for BLAS operations.
 
 Level 1 |  | Level 2 |  | Level 3 |  |
 --- | --- | --- | --- | --- | --- |
-sscal | ✅ | sgemv | ✅ | sgemm | 📅 |
+sscal | ✅ | sgemv | ✅ | sgemm | ✅ |
 saxpy | ✅ |  |   |   |   | 
 sdot | ✅ |  |   |   |   | 
 snrm2 | ✅ |  |   |   |   | 
@@ -21,7 +21,6 @@ isamax | ✅ |  |   |   |   |
 
 Sy | Desc
 --- | ---
-☑️ | Optimized
 ✅ | Tested
 ✔️ | Designed
 📅 | Planned
@@ -30,7 +29,7 @@ Sy | Desc
 
 ## Support
 
-Your GPU likely supports subgroups operations, but likely does not support float atomics ([list of GPUs which support float atomics](https://vulkan.gpuinfo.org/listdevicescoverage.php?extension=VK_EXT_shader_atomic_float)). I am planning procedures for circumstance both with and without support for float atomics.
+Your GPU likely supports subgroups operations, but likely does not support float atomics ([list of GPUs which support float atomics](https://vulkan.gpuinfo.org/listdevicescoverage.php?extension=VK_EXT_shader_atomic_float)), this is why I don't use them.
 
 - `GL_EXT_shader_atomic_float`: Inter-workgroup reduction. To return 1 sum, max, etc. instead of 1 for each workgroup.
 - `GL_KHR_shader_subgroup_arithmetic`: Fast intra-workgroup reduction. To get sum, max, etc. within a workgroup quickly.

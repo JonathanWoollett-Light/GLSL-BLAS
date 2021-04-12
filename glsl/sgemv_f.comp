@@ -27,13 +27,13 @@ void main() {
     const uint indx = gl_LocalInvocationID.x;
     const uint rows = uint(ceil(size / float(gl_WorkGroupSize.x)));
 
-    const uint start = indx*rows;
+    const uint start = indx * rows;
     const uint stop = start + rows;
-    for(uint m=start;m<stop;++m) {
+    for(uint m = start; m < stop; ++m) {
         float rSum = 0;
-        const uint row = size*m;
-        for(uint n=0;n<size;++n) {
-            rSum += A[row+n]*x[n];
+        const uint row = size * m;
+        for(uint n = 0;n < size; ++n) {
+            rSum += A[row+n] * x[n];
         }
         rSum *= alpha;
         rSum += beta * y[m];

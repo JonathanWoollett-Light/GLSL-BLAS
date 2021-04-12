@@ -55,49 +55,95 @@ namespace Utility {
         VkMemoryPropertyFlags const properties
     );
     // Creates buffer
+    template<typename T, size_t Size>
     void createBuffer(
         VkPhysicalDevice const& physicalDevice,
         VkDevice const& device,
-        size_t const size,
+        std::array<T,Size> & bufferValues,
         VkBuffer * const buffer,
         VkDeviceMemory * const bufferMemory
-    );
+    ) {
+        // Buffer info
+        VkBufferCreateInfo bufferCreateInfo = {
+            .sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO,
+            // buffer size in bytes.
+            .size = sizeof(T)*Size,
+            // buffer is used as a storage buffer (and is thus accessible in a shader).
+            .usage = VK_BUFFER_USAGE_STORAGE_BUFFER_BIT,
+            // buffer is exclusive to a single queue family at a time. 
+            .sharingMode = VK_SHARING_MODE_EXCLUSIVE
+        };
+
+        // Constructs buffer
+        VK_CHECK_RESULT(vkCreateBuffer(device, &bufferCreateInfo, nullptr, buffer));
+
+        // Buffers do not allocate memory upon instantiaton, we must do it manually
+        
+        // Gets buffer memory size and offset
+        VkMemoryRequirements memoryRequirements;
+        vkGetBufferMemoryRequirements(device, *buffer, &memoryRequirements);
+        
+        // Memory info
+        VkMemoryAllocateInfo allocateInfo = {
+            .sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO,
+            .allocationSize = memoryRequirements.size  // Size in bytes
+        };
+
+        allocateInfo.memoryTypeIndex = findMemoryType(
+            physicalDevice,
+            // Specifies memory types supported for the buffer
+            memoryRequirements.memoryTypeBits,
+            // Sets memory must have the properties:
+            //  `VK_MEMORY_PROPERTY_HOST_COHERENT_BIT` Easily view
+            //  `VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT` Read from GPU to CPU
+            VK_MEMORY_PROPERTY_HOST_COHERENT_BIT | VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT
+        );
+
+        // Allocates memory
+        VK_CHECK_RESULT(vkAllocateMemory(device, &allocateInfo, nullptr, bufferMemory));
+
+        // Binds buffer to allocated memory
+        VK_CHECK_RESULT(vkBindBufferMemory(device, *buffer, *bufferMemory, 0));
+    }
     // Creates buffers
-    template<size_t NumBuffers>
+    template<size_t I = 0, typename T, size_t... Sizes>
     void createBuffers(
         VkPhysicalDevice const & physicalDevice,
         VkDevice const & device,
-        std::array<size_t,NumBuffers> bufferSizes,
-        std::array<VkBuffer,NumBuffers> & buffer,
-        std::array<VkDeviceMemory,NumBuffers> & bufferMemory
+        std::tuple<std::array<T, Sizes>...> & bufferValues,
+        std::array<VkBuffer, sizeof...(Sizes)> & buffer,
+        std::array<VkDeviceMemory, sizeof...(Sizes)> & bufferMemory
     ) {
-        for(size_t i=0;i<bufferSizes.size();++i) {
+        if constexpr(I == sizeof...(Sizes)) { return; }
+        else {
             // Creates buffer
-            Utility::createBuffer(physicalDevice, device, bufferSizes[i], &buffer[i], &bufferMemory[i]);
+            Utility::createBuffer(physicalDevice, device, std::get<I>(bufferValues), &buffer[I], &bufferMemory[I]);
+            // Iterate
+            Utility::createBuffers<I+1>(physicalDevice,device,bufferValues,buffer,bufferMemory);
         }
     }
     // Fills a buffer with given data
-    template <size_t Size>
+    template <typename T, size_t Size>
     void fillBuffer(
         VkDevice const & device,
         VkDeviceMemory& bufferMemory,
-        std::array<float,Size> & bufferData
+        std::array<T,Size> & bufferData
     )  {
         void* data = nullptr;
         // Maps buffer memory into RAM
         vkMapMemory(device, bufferMemory, 0, VK_WHOLE_SIZE, 0, &data);
         // Fills buffer memory
-        memcpy(data, bufferData.data(), static_cast<size_t>(Size * sizeof(float)));
+        memcpy(data, bufferData.data(), Size * sizeof(T));
         // Un-maps buffer memory from RAM to device memory
         vkUnmapMemory(device, bufferMemory);
     }
-    template <size_t I=0, size_t... Sizes>
+    template <size_t I = 0, typename T, size_t... Sizes>
     void fillBuffers(
         VkDevice const & device,
         std::array<VkDeviceMemory,sizeof...(Sizes)> bufferMemory,
-        std::tuple<std::array<float,Sizes>...> & data
+        std::tuple<std::array<T,Sizes>...> & data
     )  {
-        if constexpr(I==sizeof...(Sizes)) { return; }
+        if constexpr(I == sizeof...(Sizes)) { return; }
         else {
             Utility::fillBuffer(device,bufferMemory[I],std::get<I>(data));
             Utility::fillBuffers<I+1>(device,bufferMemory,data);
@@ -205,7 +251,7 @@ namespace Utility {
     std::pair<size_t,uint32_t*> readShader(char const* filename);
 
     template <size_t NumPushConstants>
-    constexpr size_t pushConstantsSize(std::array<std::variant<uint32_t,float>,NumPushConstants> const& pushConstants) {
+    constexpr size_t pushConstantsSize(std::array<std::variant<uint32_t,float,double>,NumPushConstants> const& pushConstants) {
         auto size_fn = [](auto const& var) -> size_t {
             using T = std::decay_t<decltype(var)>;
             return sizeof(T);
@@ -300,9 +346,9 @@ namespace Utility {
         VkPipeline& pipeline,
         VkPipelineLayout& pipelineLayout,
         VkDescriptorSet& descriptorSet,
-        std::array<size_t,3> dims, // [x,y,z],
-        std::array<size_t,3> dimLengths, // [local_size_x, local_size_y, local_size_z]
-        std::array<std::variant<uint32_t,float>,NumPushConstants> const& pushConstants
+        std::array<size_t, 3> dims, // [x,y,z],
+        std::array<size_t, 3> dimLengths, // [local_size_x, local_size_y, local_size_z]
+        std::array<std::variant<uint32_t, float, double>,NumPushConstants> const & pushConstants
     ) {
         // Creates command pool
         VkCommandPoolCreateInfo commandPoolCreateInfo = {
@@ -385,12 +431,22 @@ namespace Utility {
         VkQueue const& queue
     );
 
-    void* map(VkDevice& device, VkDeviceMemory& bufferMemory);
+    // Maps buffer to CPU memory
+    template<typename T>
+    T map(
+        VkDevice& device,
+        VkDeviceMemory& bufferMemory
+    ) {
+        void* data = nullptr;
+        vkMapMemory(device, bufferMemory, 0, VK_WHOLE_SIZE, 0, &data);
+        return static_cast<T>(data);
+    }
 }
 
 template <
     size_t NumPushConstants,
-    std::array<std::variant<uint32_t,float>, NumPushConstants> const& pushConstant,
+    std::array<std::variant<uint32_t,float,double>, NumPushConstants> const& pushConstant,
+    typename T,
     size_t... BufferSizes
 >
 class ComputeApp {
@@ -420,7 +476,7 @@ class ComputeApp {
     public:
         ComputeApp(
             char const* shaderFile,
-            std::tuple<std::array<float,BufferSizes>...> & buffers,
+            std::tuple<std::array<T,BufferSizes>...> & buffers,
             std::array<size_t,3> dims, // [x,y,z],
             std::array<size_t,3> dimLengths // [local_size_x, local_size_y, local_size_z]
         )  {
@@ -438,10 +494,10 @@ class ComputeApp {
             Utility::createDevice(this->physicalDevice, this->queueFamilyIndex, this->device, this->queue);
 
             // Creates buffers
-            Utility::createBuffers<numBuffers>(
+            Utility::createBuffers(
                 this->physicalDevice,
                 this->device,
-                std::array<size_t, numBuffers>{ BufferSizes... },
+                buffers,
                 this->buffer,
                 this->bufferMemory
             );

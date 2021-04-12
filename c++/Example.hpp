@@ -12,9 +12,8 @@
 #include <cstring> // std::memcpy
 
 #include <iostream>
-#include <tuple>
+#include <tuple> // std::tuple
 #include <limits>
-
 #include <chrono>
 
 #ifdef NDEBUG
@@ -59,7 +58,7 @@ namespace Utility {
     void createBuffer(
         VkPhysicalDevice const& physicalDevice,
         VkDevice const& device,
-        std::array<T,Size> & bufferValues,
+        std::array<T,Size>& bufferValues,
         VkBuffer * const buffer,
         VkDeviceMemory * const bufferMemory
     ) {
@@ -248,15 +247,15 @@ namespace Utility {
         vkUpdateDescriptorSets(device, 1, &writeDescriptorSet, 0, nullptr);
     }
     // Reads shader file
-    std::pair<size_t,uint32_t*> readShader(char const* filename);
+    std::pair<size_t, uint32_t*> readShader(char const* filename);
 
     template <size_t NumPushConstants>
-    constexpr size_t pushConstantsSize(std::array<std::variant<uint32_t,float,double>,NumPushConstants> const& pushConstants) {
+    constexpr size_t pushConstantsSize(std::array<std::variant<uint32_t, float, double>, NumPushConstants> const& pushConstants) {
         auto size_fn = [](auto const& var) -> size_t {
             using T = std::decay_t<decltype(var)>;
             return sizeof(T);
         };
-        return static_cast<size_t>(std::accumulate(pushConstants.cbegin(),pushConstants.cend(),
+        return static_cast<size_t>(std::accumulate(pushConstants.cbegin(), pushConstants.cend(),
             std::size_t{ 0 },
             [size_fn](std::size_t acc, auto const var) { return acc + std::visit(size_fn,var); }
         ));
@@ -348,7 +347,7 @@ namespace Utility {
         VkDescriptorSet& descriptorSet,
         std::array<size_t, 3> dims, // [x,y,z],
         std::array<size_t, 3> dimLengths, // [local_size_x, local_size_y, local_size_z]
-        std::array<std::variant<uint32_t, float, double>,NumPushConstants> const & pushConstants
+        std::array<std::variant<uint32_t, float, double>, NumPushConstants> const & pushConstants
     ) {
         // Creates command pool
         VkCommandPoolCreateInfo commandPoolCreateInfo = {
@@ -386,14 +385,14 @@ namespace Utility {
 
         // Sets push constants
         if constexpr (PushConstantSize > 0) {
-            std::array<std::byte,PushConstantSize> bytes;
+            std::array<std::byte, PushConstantSize> bytes;
             size_t byteCounter = 0;
-            std::for_each(pushConstants.cbegin(),pushConstants.cend(), [&](auto const& var) {
+            std::for_each(pushConstants.cbegin(), pushConstants.cend(), [&](auto const& var) {
                 std::visit([&] (auto const& var) {
                     using T = std::decay_t<decltype(var)>;
-                    std::memcpy(bytes.data()+byteCounter,static_cast<void const*>(&var),sizeof(T));
+                    std::memcpy(bytes.data() + byteCounter, static_cast<void const*>(&var), sizeof(T));
                     byteCounter += sizeof(T);
-                },var);
+                }, var);
             });
             
             vkCmdPushConstants(
@@ -415,9 +414,7 @@ namespace Utility {
         // Sets invocations
         vkCmdDispatch(
             *commandBuffer,
-            x,
-            y,
-            z
+            x,y,z
         );
 
         // End recording commands
@@ -460,8 +457,8 @@ class ComputeApp {
         size_t queueFamilyIndex;                                        // Index to a queue family.
         VkQueue queue;                                                  // Queue.
         size_t numHeldBuffers;                                          // Number of buffers (necessary for destruction).
-        std::array<VkBuffer,sizeof...(BufferSizes)> buffer;             // Buffers.
-        std::array<VkDeviceMemory,sizeof...(BufferSizes)> bufferMemory; // Buffer memories.
+        std::array<VkBuffer, sizeof...(BufferSizes)> buffer;             // Buffers.
+        std::array<VkDeviceMemory, sizeof...(BufferSizes)> bufferMemory; // Buffer memories.
         VkDescriptorSetLayout descriptorSetLayout;                      // Layout of a descriptor set.
         VkDescriptorPool descriptorPool;                                // Pool from which to pull descriptor sets.
         VkDescriptorSet descriptorSet;                                  // Descriptor set.
@@ -476,9 +473,9 @@ class ComputeApp {
     public:
         ComputeApp(
             char const* shaderFile,
-            std::tuple<std::array<T,BufferSizes>...> & buffers,
-            std::array<size_t,3> dims, // [x,y,z],
-            std::array<size_t,3> dimLengths // [local_size_x, local_size_y, local_size_z]
+            std::tuple<std::array<T, BufferSizes>...> & buffers,
+            std::array<size_t, 3> dims, // [x,y,z],
+            std::array<size_t, 3> dimLengths // [local_size_x, local_size_y, local_size_z]
         )  {
             constexpr size_t const numBuffers = sizeof...(BufferSizes);
             

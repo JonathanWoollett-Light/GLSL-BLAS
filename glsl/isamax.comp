@@ -1,0 +1,58 @@
+#version 450
+#extension GL_KHR_shader_subgroup_arithmetic: enable
+
+layout(local_size_x = 1024, local_size_y = 1, local_size_z = 1) in;
+
+layout(binding = 0) buffer Buffer {
+    float x[];
+};
+layout(binding = 1) buffer Output {
+    uint maxIndex; // Global maximum index
+};
+
+layout(push_constant) uniform PushConsts {
+    uint n; // Length of `x` & `y`
+};
+
+shared float sMaxs[16]; // gl_WorkGroupSize.x / gl_SubgroupSize.x = 1024 / 64 = 16;
+shared uint sIndicies[16]; // gl_WorkGroupSize.x / gl_SubgroupSize.x = 1024 / 64 = 16;
+
+void main() {
+    const uint indx = gl_LocalInvocationID.x;
+
+    // n -> gl_WorkGroupSize.x
+    // ---------------------------
+    const uint elements = uint(ceil(n / float(gl_WorkGroupSize.x)));
+    
+    const uint start = elements * indx;
+    const uint stop = start + elements;
+
+    float mValue = abs(x[start]);
+    uint mIndex = start;
+
+    for(uint i = start + 1; i < stop; ++i) {
+        float absValue = abs(x[i]);
+        if (absValue > mValue) {
+            mValue = absValue;
+            mIndex = i;
+        }
+    }
+    barrier();
+
+    // gl_WorkGroupSize.x -> 1
+    // ---------------------------
+    float sMax = subgroupMax(mValue);
+    if(mValue == sMax) {
+        sMaxs[gl_SubgroupID] = mValue; // <=> `=subgroupMax`
+        sIndicies[gl_SubgroupID] = mIndex;
+    }
+    barrier();
+
+    if(gl_SubgroupID == 0) {
+        float subMax = gl_SubgroupInvocationID < gl_NumSubgroups ? sMaxs[gl_SubgroupInvocationID] : 0;
+        float iSubMax = subgroupMax(subMax);
+        if(subMax == iSubMax) {
+            maxIndex = sIndicies[gl_SubgroupInvocationID];
+        }
+    }
+}

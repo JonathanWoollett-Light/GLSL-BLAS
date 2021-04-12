@@ -194,11 +194,11 @@ TEST(SAXPY, random) {
     }
 }
 
-// sdot_f
+// sdot
 // -----------------------------------------
 
 // 1 subgroup worth (10)
-TEST(SDOT_F, one) {
+TEST(SDOT, one) {
     size_t const numPushConstants = 1;
     size_t const size = 10;
 
@@ -212,7 +212,7 @@ TEST(SDOT_F, one) {
         static_cast<uint32_t>(size)
     };
 
-    char const shader[] = "../../../glsl/sdot_f.spv";
+    char const shader[] = "../../../glsl/sdot.spv";
 
     ComputeApp app = ComputeApp<numPushConstants,pushConstants,float,size,size,1>(
         shader,
@@ -225,7 +225,7 @@ TEST(SDOT_F, one) {
     ASSERT_NEAR(*out,120.0,EPSILON);
 }
 // 2 subgroups worth (70)
-TEST(SDOT_F, two) {
+TEST(SDOT, two) {
     size_t const numPushConstants = 1;
     size_t const size = 70;
 
@@ -255,7 +255,7 @@ TEST(SDOT_F, two) {
         static_cast<uint32_t>(size)
     };
 
-    char const shader[] = "../../../glsl/sdot_f.spv";
+    char const shader[] = "../../../glsl/sdot.spv";
 
     ComputeApp app = ComputeApp<numPushConstants,pushConstants,float,size,size,1>(
         shader,
@@ -269,7 +269,7 @@ TEST(SDOT_F, two) {
 }
 
 // 2 workgroups worth (1050)
-TEST(SDOT_F, three) {
+TEST(SDOT, three) {
     size_t const numBuffers = 3;
     size_t const numPushConstants = 1;
     size_t const size = 1050;
@@ -328,7 +328,7 @@ TEST(SDOT_F, three) {
         static_cast<uint32_t>(size)
     };
 
-    char const shader[] = "../../../glsl/sdot_f.spv";
+    char const shader[] = "../../../glsl/sdot.spv";
 
     ComputeApp app = ComputeApp<numPushConstants,pushConstants,float,size,size,1>(
         shader,
@@ -341,7 +341,7 @@ TEST(SDOT_F, three) {
     ASSERT_NEAR(*out,12600.0,EPSILON); // 120 * 5 * 21
 }
 
-TEST(SDOT_F, random) {
+TEST(SDOT, random) {
     srand((unsigned int)time(NULL));
 
     size_t const numPushConstants = 1;
@@ -363,7 +363,7 @@ TEST(SDOT_F, random) {
         static_cast<uint32_t>(size)
     };
 
-    char const shader[] = "../../../glsl/sdot_f.spv";
+    char const shader[] = "../../../glsl/sdot.spv";
     ComputeApp app = ComputeApp<numPushConstants,pushConstants,float,size,size,1>(
         shader,
         data, // Buffer data
@@ -379,11 +379,11 @@ TEST(SDOT_F, random) {
     ASSERT_NEAR(*out,sum,EPSILON);
 }
 
-// snrm2_f
+// snrm2
 // -----------------------------------------
 
 // 1 subgroup worth (10)
-TEST(SNRM2_F, one) {
+TEST(SNRM2, one) {
     size_t const numBuffers = 2;
     size_t const numPushConstants = 1;
     size_t const size = 10;
@@ -397,7 +397,7 @@ TEST(SNRM2_F, one) {
         static_cast<uint32_t>(size)
     };
 
-    char const shader[] = "../../../glsl/snrm2_f.spv";
+    char const shader[] = "../../../glsl/snrm2.spv";
 
     ComputeApp app = ComputeApp<numPushConstants,pushConstants,float,size,1>(
         shader,
@@ -411,7 +411,7 @@ TEST(SNRM2_F, one) {
 }
 
 // 2 subgroups worth (70)
-TEST(SNRM2_F, two) {
+TEST(SNRM2, two) {
     size_t const numBuffers = 2;
     size_t const numPushConstants = 1;
     size_t const size = 70;
@@ -433,7 +433,7 @@ TEST(SNRM2_F, two) {
         static_cast<uint32_t>(size)
     };
 
-    char const shader[] = "../../../glsl/snrm2_f.spv";
+    char const shader[] = "../../../glsl/snrm2.spv";
 
     ComputeApp app = ComputeApp<numPushConstants,pushConstants,float,size,1>(
         shader,
@@ -447,7 +447,7 @@ TEST(SNRM2_F, two) {
 }
 
 // 2 workgroups worth (1050)
-TEST(SNRM2_F, three) {
+TEST(SNRM2, three) {
     size_t const numBuffers = 2;
     size_t const numPushConstants = 1;
     size_t const size = 1050;
@@ -483,7 +483,7 @@ TEST(SNRM2_F, three) {
         static_cast<uint32_t>(size)
     };
 
-    char const shader[] = "../../../glsl/snrm2_f.spv";
+    char const shader[] = "../../../glsl/snrm2.spv";
 
     ComputeApp app = ComputeApp<numPushConstants,pushConstants,float,size,1>(
         shader,
@@ -496,7 +496,7 @@ TEST(SNRM2_F, three) {
     ASSERT_NEAR(*out,172.988438,EPSILON); // 285 * 5 * 21
 }
 
-TEST(SNRM2_F, random) {
+TEST(SNRM2, random) {
     srand((unsigned int)time(NULL));
 
     size_t const numPushConstants = 1;
@@ -515,7 +515,7 @@ TEST(SNRM2_F, random) {
         static_cast<uint32_t>(size)
     };
 
-    char const shader[] = "../../../glsl/snrm2_f.spv";
+    char const shader[] = "../../../glsl/snrm2.spv";
 
     ComputeApp app = ComputeApp<numPushConstants,pushConstants,float,size,1>(
         shader,
@@ -536,7 +536,7 @@ TEST(SNRM2_F, random) {
 // -----------------------------------------
 
 // 1 subgroup worth (10)
-TEST(SASUM_F, one) {
+TEST(SASUM, one) {
     size_t const numPushConstants = 1;
     size_t const size = 10;
 
@@ -549,7 +549,7 @@ TEST(SASUM_F, one) {
         static_cast<uint32_t>(size)
     };
 
-    char const shader[] = "../../../glsl/sasum_f.spv";
+    char const shader[] = "../../../glsl/sasum.spv";
 
     ComputeApp app = ComputeApp<numPushConstants,pushConstants,float,size,1>(
         shader,
@@ -563,7 +563,7 @@ TEST(SASUM_F, one) {
 }
 
 // 2 subgroups worth (70)
-TEST(SASUM_F, two) {
+TEST(SASUM, two) {
     size_t const numPushConstants = 1;
     size_t const size = 70;
 
@@ -584,7 +584,7 @@ TEST(SASUM_F, two) {
         static_cast<uint32_t>(size)
     };
 
-    char const shader[] = "../../../glsl/sasum_f.spv";
+    char const shader[] = "../../../glsl/sasum.spv";
 
     ComputeApp app = ComputeApp<numPushConstants,pushConstants,float,size,1>(
         shader,
@@ -598,7 +598,7 @@ TEST(SASUM_F, two) {
 }
 
 // 2 workgroups worth (1050)
-TEST(SASUM_F, three) {
+TEST(SASUM, three) {
     size_t const numPushConstants = 1;
     size_t const size = 1050;
 
@@ -633,7 +633,7 @@ TEST(SASUM_F, three) {
         static_cast<uint32_t>(size)
     };
 
-    char const shader[] = "../../../glsl/sasum_f.spv";
+    char const shader[] = "../../../glsl/sasum.spv";
 
     ComputeApp app = ComputeApp<numPushConstants,pushConstants,float,size,1>(
         shader,
@@ -646,7 +646,7 @@ TEST(SASUM_F, three) {
     ASSERT_NEAR(*out,4725.0,EPSILON); // 45 * 5 * 21
 }
 
-TEST(SASUM_F, random) {
+TEST(SASUM, random) {
     srand((unsigned int)time(NULL));
 
     size_t const numPushConstants = 1;
@@ -665,7 +665,7 @@ TEST(SASUM_F, random) {
         static_cast<uint32_t>(size)
     };
 
-    char const shader[] = "../../../glsl/sasum_f.spv";
+    char const shader[] = "../../../glsl/sasum.spv";
 
     ComputeApp app = ComputeApp<numPushConstants,pushConstants,float,size,1>(
         shader,
@@ -686,7 +686,7 @@ TEST(SASUM_F, random) {
 // -----------------------------------------
 
 // 1 subgroup worth (10)
-TEST(ISAMAX_F, one) {
+TEST(ISAMAX, one) {
     size_t const numPushConstants = 1;
     size_t const size = 10;
 
@@ -699,7 +699,7 @@ TEST(ISAMAX_F, one) {
         static_cast<uint32_t>(size)
     };
 
-    char const shader[] = "../../../glsl/isamax_f.spv";
+    char const shader[] = "../../../glsl/isamax.spv";
 
     ComputeApp app = ComputeApp<numPushConstants,pushConstants,float,size,1>(
         shader,
@@ -713,7 +713,7 @@ TEST(ISAMAX_F, one) {
 }
 
 // 2 subgroups worth (70)
-TEST(ISAMAX_F, two) {
+TEST(ISAMAX, two) {
     size_t const numPushConstants = 1;
     size_t const size = 70;
 
@@ -734,7 +734,7 @@ TEST(ISAMAX_F, two) {
         static_cast<uint32_t>(size)
     };
 
-    char const shader[] = "../../../glsl/isamax_f.spv";
+    char const shader[] = "../../../glsl/isamax.spv";
 
     ComputeApp app = ComputeApp<numPushConstants,pushConstants,float,size,1>(
         shader,
@@ -747,7 +747,7 @@ TEST(ISAMAX_F, two) {
     ASSERT_EQ(*out,59);
 }
 
-TEST(ISAMAX_F, random) {
+TEST(ISAMAX, random) {
     srand((unsigned int)time(NULL));
 
     size_t const numPushConstants = 1;
@@ -766,7 +766,7 @@ TEST(ISAMAX_F, random) {
         static_cast<uint32_t>(size)
     };
 
-    char const shader[] = "../../../glsl/isamax_f.spv";
+    char const shader[] = "../../../glsl/isamax.spv";
 
     ComputeApp app = ComputeApp<numPushConstants,pushConstants,float,size,1>(
         shader,
@@ -796,7 +796,7 @@ TEST(ISAMAX_F, random) {
 // -----------------------------------------
 
 // 1 subgroup worth (10)
-TEST(SGEMV_F, one) {
+TEST(SGEMV, one) {
     size_t const numBuffers = 3;
     size_t const numPushConstants = 3;
     size_t const size = 10;
@@ -824,7 +824,7 @@ TEST(SGEMV_F, one) {
         static_cast<uint32_t>(size)
     };
     
-    char const shader[] = "../../../glsl/sgemv_f.spv";
+    char const shader[] = "../../../glsl/sgemv.spv";
 
     ComputeApp app = ComputeApp<numPushConstants,pushConstants,float,size,size,size*size>(
         shader,
@@ -843,7 +843,7 @@ TEST(SGEMV_F, one) {
 }
 
 // 1 subgroup worth (10) non-1 scalars
-TEST(SGEMV_F, two) {
+TEST(SGEMV, two) {
     size_t const numBuffers = 3;
     size_t const numPushConstants = 3;
     size_t const size = 10;
@@ -871,7 +871,7 @@ TEST(SGEMV_F, two) {
         static_cast<uint32_t>(size)
     };
     
-    char const shader[] = "../../../glsl/sgemv_f.spv";
+    char const shader[] = "../../../glsl/sgemv.spv";
 
     ComputeApp app = ComputeApp<numPushConstants,pushConstants,float,size,size,size*size>(
         shader,
@@ -889,7 +889,7 @@ TEST(SGEMV_F, two) {
     }
 }
 
-TEST(SGEMV_F, random) {
+TEST(SGEMV, random) {
     srand((unsigned int)time(NULL));
 
     size_t const numPushConstants = 3;
@@ -918,7 +918,7 @@ TEST(SGEMV_F, random) {
         alpha,beta,static_cast<uint32_t>(size)
     };
 
-    char const shader[] = "../../../glsl/sgemv_f.spv";
+    char const shader[] = "../../../glsl/sgemv.spv";
 
     ComputeApp app = ComputeApp<numPushConstants,pushConstants,float,size,size,size*size>(
         shader,
@@ -950,7 +950,7 @@ TEST(SGEMV_F, random) {
 // -----------------------------------------
 
 // 1 subgroup worth (3,5,2)
-TEST(SGEMM_F, one) {
+TEST(SGEMM, one) {
     size_t const numBuffers = 3;
     size_t const numPushConstants = 5;
     size_t const m = 3;
@@ -989,7 +989,7 @@ TEST(SGEMM_F, one) {
         static_cast<uint32_t>(n)
     };
     
-    char const shader[] = "../../../glsl/sgemm_f.spv";
+    char const shader[] = "../../../glsl/sgemm.spv";
 
     ComputeApp app = ComputeApp<numPushConstants,pushConstants,float,a_size,b_size,c_size>(
         shader,
@@ -1009,7 +1009,7 @@ TEST(SGEMM_F, one) {
     }
 }
 
-TEST(SGEMM_F, random) {
+TEST(SGEMM, random) {
     srand((unsigned int)time(NULL));
 
     size_t const numPushConstants = 5;
@@ -1053,7 +1053,7 @@ TEST(SGEMM_F, random) {
         static_cast<uint32_t>(n)
     };
 
-    char const shader[] = "../../../glsl/sgemm_f.spv";
+    char const shader[] = "../../../glsl/sgemm.spv";
 
     ComputeApp app = ComputeApp<numPushConstants,pushConstants,float,a_size,b_size,c_size>(
         shader,

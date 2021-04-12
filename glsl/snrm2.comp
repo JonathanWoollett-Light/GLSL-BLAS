@@ -6,12 +6,13 @@ layout(local_size_x = 1024, local_size_y = 1, local_size_z = 1) in;
 layout(binding = 0) buffer Buffer {
     float x[];
 };
-layout(binding = 1) buffer Output {
-    float total; // total sum
+layout(binding = 1) buffer Output
+{
+   float total;
 };
-// Length of `x`
+
 layout(push_constant) uniform PushConsts {
-    uint n; // n=len(x)
+    uint n; // Length of `x` & `y`
 };
 
 shared float sdata[16]; // gl_WorkGroupSize.x / gl_SubgroupSize.x = 1024 / 64 = 16;
@@ -20,15 +21,13 @@ shared float sdata[16]; // gl_WorkGroupSize.x / gl_SubgroupSize.x = 1024 / 64 = 
 // gl_LocalInvocationID.x === gl_GlobalInvocationID.x
 void main() {
     const uint indx = gl_LocalInvocationID.x;
-    float sum = 0; // x ⊙ j (vector dot product = matrix hadamard product + summation)
+    float sum = 0;
 
     // n -> gl_WorkGroupSize.x
     // ---------------------------
-
-    // Number of elements this invocation must cover
     const uint elements = uint(ceil(n / float(gl_WorkGroupSize.x)));
-    for(uint i=0;i<elements;++i) {
-        sum += abs(x[elements * indx + i]);
+    for(uint i = 0; i < elements; ++i) {
+        sum += x[elements * indx + i] * x[elements * indx + i];
     }
     barrier();
 
@@ -41,6 +40,6 @@ void main() {
     if (gl_SubgroupID == 0){
         sum = gl_SubgroupInvocationID < gl_NumSubgroups ? sdata[gl_SubgroupInvocationID] : 0;
         sum = subgroupAdd(sum);
-        if (subgroupElect()) total = sum;
+        if (subgroupElect()) total = sqrt(sum);
     }
 }

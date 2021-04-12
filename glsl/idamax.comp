@@ -4,37 +4,34 @@
 layout(local_size_x = 1024, local_size_y = 1, local_size_z = 1) in;
 
 layout(binding = 0) buffer Buffer {
-    float x[];
+    double x[];
 };
 layout(binding = 1) buffer Output {
     uint maxIndex; // Global maximum index
 };
-// Length of `x` & `y`
+
 layout(push_constant) uniform PushConsts {
-    uint n; // n=len(x)=len(y)
+    uint n; // Length of `x` & `y`
 };
 
-shared float sMaxs[16]; // gl_WorkGroupSize.x / gl_SubgroupSize.x = 1024 / 64 = 16;
+shared double sMaxs[16]; // gl_WorkGroupSize.x / gl_SubgroupSize.x = 1024 / 64 = 16;
 shared uint sIndicies[16]; // gl_WorkGroupSize.x / gl_SubgroupSize.x = 1024 / 64 = 16;
-
-//shared float w_max; // Workgroup max value
 
 void main() {
     const uint indx = gl_LocalInvocationID.x;
 
     // n -> gl_WorkGroupSize.x
     // ---------------------------
-
     const uint elements = uint(ceil(n / float(gl_WorkGroupSize.x)));
     
     const uint start = elements * indx;
     const uint stop = start + elements;
 
-    // Number of elements this invocation must cover
-    float mValue = abs(x[start]);
+    double mValue = abs(x[start]);
     uint mIndex = start;
-    for(uint i=start+1;i<stop;++i) {
-        float absValue = abs(x[i]);
+
+    for(uint i = start + 1; i < stop; ++i) {
+        double absValue = abs(x[i]);
         if (absValue > mValue) {
             mValue = absValue;
             mIndex = i;
@@ -44,7 +41,7 @@ void main() {
 
     // gl_WorkGroupSize.x -> 1
     // ---------------------------
-    float sMax = subgroupMax(mValue);
+    double sMax = subgroupMax(mValue);
     if(mValue == sMax) {
         sMaxs[gl_SubgroupID] = mValue; // <=> `=subgroupMax`
         sIndicies[gl_SubgroupID] = mIndex;
@@ -52,9 +49,8 @@ void main() {
     barrier();
 
     if(gl_SubgroupID == 0) {
-        //float subMax = sMaxs[gl_SubgroupInvocationID];
-        float subMax = gl_SubgroupInvocationID < gl_NumSubgroups ? sMaxs[gl_SubgroupInvocationID] : 0;
-        float iSubMax = subgroupMax(subMax);
+        double subMax = gl_SubgroupInvocationID < gl_NumSubgroups ? sMaxs[gl_SubgroupInvocationID] : 0;
+        double iSubMax = subgroupMax(subMax);
         if(subMax == iSubMax) {
             maxIndex = sIndicies[gl_SubgroupInvocationID];
         }

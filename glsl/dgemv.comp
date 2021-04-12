@@ -1,0 +1,41 @@
+#version 450
+#extension GL_KHR_shader_subgroup_arithmetic : enable
+
+layout(local_size_x = 1024, local_size_y = 1, local_size_z = 1) in;
+
+layout(binding = 0) buffer Buffer0 {
+    double x[];
+};
+layout(binding = 1) buffer Buffer1 {
+    double y[];
+};
+layout(binding = 2) buffer Buffer2 {
+    double A[];
+};
+
+layout(push_constant) uniform PushConsts {
+    double alpha;
+    double beta;
+    uint size; // = m = n
+};
+
+// This should only be called with 1 workgroup
+// gl_LocalInvocationID.x === gl_GlobalInvocationID.x
+void main() {
+    const uint indx = gl_LocalInvocationID.x;
+    const uint rows = uint(ceil(size / float(gl_WorkGroupSize.x)));
+
+    const uint start = indx * rows;
+    const uint stop = start + rows;
+    for(uint m = start; m < stop; ++m) {
+        double rSum = 0;
+        const uint row = size * m;
+        for(uint n = 0;n < size; ++n) {
+            rSum += A[row+n] * x[n];
+        }
+        rSum *= alpha;
+        rSum += beta * y[m];
+
+        y[m] = rSum;
+    }
+}

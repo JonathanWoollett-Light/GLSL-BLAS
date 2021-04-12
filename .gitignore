@@ -1,7 +1,5 @@
 /rust/target
 /rust/Cargo.lock
 
-/glsl/*.spv
-
 /c++/build
 c++/.vscode

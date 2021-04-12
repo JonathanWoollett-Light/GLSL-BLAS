@@ -2,6 +2,12 @@
 
 GLSL implemented with Vulkan for BLAS operations.
 
+## Structure
+
+- `c++/`: Code to test the shaders.
+- `rust/`: Naive BLAS CPU benchmarks.
+- `glsl/`: The GLSL shaders.
+
 ## Report
 
 <table>

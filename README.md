@@ -10,12 +10,12 @@ GLSL implemented with Vulkan for BLAS operations.
 
 Level 1 |  | Level 2 |  | Level 3 |  |
 --- | --- | --- | --- | --- | --- |
-sscal | ✅ | sgemv | ✅ | sgemm | ✅ |
-saxpy | ✅ |  |   |   |   | 
-sdot | ✅ |  |   |   |   | 
-snrm2 | ✅ |  |   |   |   | 
-sasum | ✅ |  |   |   |   |
-isamax | ✅ |  |   |   |   | 
+sscal & dscal | ✅ | sgemv & dgemv | ✅ | sgemm & dgemm | ✅ |
+saxpy & daxpy | ✅ |  |   |   |   | 
+sdot & ddot | ✅ |  |   |   |   | 
+snrm2 & dnrm2 | ✅ |  |   |   |   | 
+sasum & dasum | ✅ |  |   |   |   |
+isamax & idamax | ✅ |  |   |   |   | 
 
 </td><td>
 

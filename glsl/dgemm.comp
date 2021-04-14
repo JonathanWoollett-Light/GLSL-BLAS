@@ -47,7 +47,7 @@ void main() {
             }
 
             const uint C_index = n * m_index + n_index;
-            C[C_index] = alpha*temp + beta*C[C_index];
+            C[C_index] = alpha * temp + beta * C[C_index];
         }
     }
 }
